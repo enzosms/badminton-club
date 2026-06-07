@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f4f4f6">
+<title>Badminton</title>
+<style>
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: #f4f4f6; color: #111; font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; font-size: 15px; }
+
+/* ── LAYOUT ── */
+#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+header {
+  height: 60px; flex-shrink: 0; background: #fff;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+  box-shadow: 0 1px 0 #eee;
+}
+header h1 { font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.hdr-actions { display: flex; gap: 8px; }
+.hdr-btn {
+  background: #fff; border: 1.5px solid #e0e0e0; border-radius: 10px;
+  padding: 7px 14px; font-size: .78rem; font-weight: 600; cursor: pointer;
+  color: #444; transition: background .12s;
+}
+.hdr-btn:active { background: #f0f0f0; }
+
+#screens { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 14px 10px; }
+#screens::-webkit-scrollbar { width: 3px; }
+#screens::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
+
+/* ── TABS ── */
+nav {
+  height: 60px; flex-shrink: 0; background: #fff;
+  display: grid; grid-template-columns: repeat(5,1fr);
+  box-shadow: 0 -1px 0 #eee;
+}
+.tab-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  background: none; border: none; color: #bbb; cursor: pointer;
+  font-size: .58rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  transition: color .15s; position: relative;
+}
+.tab-btn .ico { font-size: 1.25rem; line-height: 1; display: flex; align-items: center; justify-content: center; height: 22px; }
+.tab-btn .ico svg { width: 20px; height: 20px; display: block; }
+.tab-btn.active { color: #111; }
+.tab-btn.active::after {
+  content: ''; position: absolute; bottom: 0; left: 20%; right: 20%;
+  height: 2.5px; background: #111; border-radius: 2px 2px 0 0;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: #fff; border-radius: 16px;
+  padding: 16px 14px; margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.card-title { font-size: .95rem; font-weight: 700; margin-bottom: 12px; color: #111; }
+
+/* ── STATS ── */
+.stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  background: #fff; border-radius: 14px; padding: 14px 10px; text-align: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.stat-val { font-size: 1.9rem; font-weight: 800; line-height: 1; color: #111; }
+.stat-lbl { font-size: .62rem; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+
+/* ── PLAYER LIST ── */
+.player-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid #f2f2f2;
+}
+.player-row:last-child { border-bottom: none; }
+.p-name { flex: 1; font-size: .95rem; font-weight: 600; color: #111; }
+.p-sex-badge {
+  font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 99px;
+  letter-spacing: .04em;
+}
+.p-sex-badge.h { background: #eff6ff; color: #3b82f6; }
+.p-sex-badge.f { background: #fdf2f8; color: #ec4899; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  border: 1.5px solid #e0e0e0; border-radius: 10px; padding: 10px 16px;
+  font-size: .85rem; font-weight: 600; cursor: pointer; background: #fff; color: #111;
+  transition: background .1s; white-space: nowrap; font-family: inherit;
+}
+.btn:active { background: #f5f5f5; }
+.btn-dark { background: #111; color: #fff; border-color: #111; }
+.btn-dark:active { background: #333; }
+.btn-full { width: 100%; }
+.btn-sm { padding: 7px 12px; font-size: .78rem; border-radius: 8px; }
+.btn-ghost { border-color: transparent; background: transparent; color: #aaa; }
+.btn-ghost:active { background: #f5f5f5; }
+.btn-danger { color: #ef4444; border-color: #fecaca; }
+.btn-danger:active { background: #fff5f5; }
+
+/* ── INPUTS ── */
+input, select {
+  width: 100%; background: #f7f7f9; border: 1.5px solid #e8e8e8; border-radius: 10px;
+  color: #111; font-family: inherit; font-size: 1rem; padding: 10px 12px;
+  outline: none; transition: border-color .15s;
+}
+input:focus, select:focus { border-color: #111; background: #fff; }
+input[type=number] { text-align: center; font-size: 1.4rem; font-weight: 800; padding: 8px 4px; }
+input::placeholder { color: #ccc; }
+
+/* ── SEX TOGGLE ── */
+.sex-toggle { display: flex; gap: 8px; margin-top: 12px; }
+.sex-btn {
+  flex: 1; padding: 11px; border: 1.5px solid #e0e0e0; border-radius: 10px;
+  background: #f7f7f9; font-size: .88rem; font-weight: 700; cursor: pointer;
+  color: #aaa; transition: all .12s; font-family: inherit;
+}
+.sex-btn.sel-h { background: #eff6ff; border-color: #3b82f6; color: #3b82f6; }
+.sex-btn.sel-f { background: #fdf2f8; border-color: #ec4899; color: #ec4899; }
+
+/* ── PARAMS ── */
+.params-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.param-card { background: #fff; border-radius: 14px; padding: 14px 12px; box-shadow: 0 1px 4px rgba(0,0,0,.06); text-align: center; }
+.param-label { font-size: .62rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+.stepper { display: flex; align-items: center; gap: 6px; }
+.step-btn {
+  width: 36px; height: 36px; border: 1.5px solid #e0e0e0; border-radius: 8px;
+  background: #f7f7f9; font-size: 1.1rem; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; color: #555;
+  transition: background .1s;
+}
+.step-btn:active { background: #ebebeb; }
+.stepper input { border: none; background: transparent; font-size: 1.4rem; font-weight: 800; padding: 4px; }
+
+/* ── ROTATION BLOCK ── */
+.rot-block { background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.rot-head {
+  padding: 10px 14px; display: flex; align-items: center; gap: 8px;
+  background: #f8f8fa; border-bottom: 1px solid #f0f0f0;
+}
+.rot-num { font-size: .72rem; font-weight: 800; letter-spacing: .06em; color: #111; }
+.rot-ladies { font-size: .68rem; color: #ec4899; font-weight: 600; }
+
+.match-row {
+  display: grid; grid-template-columns: 22px 1fr 28px 1fr auto;
+  align-items: center; gap: 6px; padding: 9px 14px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.match-row:last-of-type { border-bottom: none; }
+.t-num { font-size: .68rem; font-weight: 800; color: #ccc; text-align: center; }
+.team-block { line-height: 1.5; }
+.team-a { font-size: .88rem; font-weight: 600; color: #111; }
+.team-b { font-size: .88rem; font-weight: 600; color: #111; }
+.vs-lbl { text-align: center; font-size: .65rem; font-weight: 700; color: #ccc; }
+.match-meta { text-align: right; }
+.m-type-tag { font-size: .6rem; font-weight: 700; letter-spacing: .04em; padding: 2px 6px; border-radius: 6px; }
+.m-type-tag.dm { background: #f0fdf4; color: #16a34a; }
+.m-type-tag.dd { background: #fdf4ff; color: #9333ea; }
+.m-type-tag.dh { background: #eff6ff; color: #2563eb; }
+.m-alerts { font-size: .6rem; color: #ef4444; margin-top: 2px; line-height: 1.4; }
+.m-result { font-size: .7rem; font-weight: 700; margin-top: 2px; }
+
+.rempl {
+  padding: 7px 14px; background: #fafafa;
+  font-size: .72rem; color: #888; border-top: 1px solid #f0f0f0;
+}
+.rempl strong { color: #555; }
+
+/* ── SCORES ── */
+.score-rot-head {
+  padding: 10px 14px; background: #f8f8fa; border-bottom: 1px solid #f0f0f0;
+  font-size: .72rem; font-weight: 800; letter-spacing: .06em; color: #555;
+}
+.score-match-block { padding: 14px; border-bottom: 1px solid #f5f5f5; }
+.score-match-block:last-child { border-bottom: none; }
+.score-desc { font-size: .75rem; color: #888; margin-bottom: 10px; line-height: 1.5; }
+.score-desc strong { color: #111; }
+.score-row { display: grid; grid-template-columns: 1fr 24px 1fr; align-items: center; gap: 8px; }
+.score-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.score-lbl { font-size: .88rem; font-weight: 600; color: #111; text-align: center; line-height: 1.5; }
+.score-field {
+  font-size: 2.2rem; font-weight: 800; text-align: center; width: 100%;
+  background: #f7f7f9; border: 1.5px solid #e8e8e8; border-radius: 10px;
+  padding: 8px 4px; color: #111; outline: none; font-family: inherit;
+  transition: border-color .15s;
+}
+.score-field:focus { border-color: #111; background: #fff; }
+.score-sep { text-align: center; font-size: .9rem; color: #ccc; font-weight: 700; }
+.score-tag { font-size: .65rem; font-weight: 700; letter-spacing: .04em; }
+.score-tag.win { color: #16a34a; }
+.score-tag.loss { color: #ef4444; }
+.score-tag.draw { color: #f59e0b; }
+
+/* ── CLASSEMENT ── */
+.rank-wrap { overflow-x: auto; border-radius: 14px; }
+table.rank { width: 100%; border-collapse: collapse; min-width: 340px; }
+table.rank thead th {
+  font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: #aaa; padding: 8px 10px; text-align: center; border-bottom: 1px solid #f0f0f0;
+  background: #f8f8fa;
+}
+table.rank thead th:first-child { text-align: left; }
+table.rank tbody td { padding: 10px 10px; font-size: .85rem; text-align: center; border-bottom: 1px solid #f5f5f5; }
+table.rank tbody td:first-child { text-align: left; }
+table.rank tbody tr:last-child td { border-bottom: none; }
+.rank-name { font-weight: 700; color: #111; }
+.rk-icon { margin-right: 4px; }
+.rk-num { font-size: .75rem; color: #bbb; margin-right: 6px; font-weight: 700; }
+.diff-p { color: #16a34a; font-weight: 700; }
+.diff-n { color: #ef4444; font-weight: 700; }
+td.col-v { color: #16a34a; font-weight: 700; }
+td.col-e { color: #f59e0b; font-weight: 700; }
+td.col-d { color: #ef4444; font-weight: 700; }
+td.col-score { font-weight: 800; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.25);
+  z-index: 100; align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff; border-radius: 20px 20px 0 0;
+  padding: 22px 16px 36px; width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto;
+}
+.modal-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 16px; }
+.modal-row { display: flex; gap: 10px; margin-top: 18px; }
+.modal-row .btn { flex: 1; }
+.form-label { font-size: .68rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; display: block; }
+
+/* ── EMPTY ── */
+.empty { text-align: center; padding: 44px 20px; color: #bbb; }
+.empty-ico { font-size: 2.2rem; margin-bottom: 10px; }
+.empty p { font-size: .85rem; line-height: 1.7; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 74px; left: 50%; transform: translateX(-50%) translateY(10px);
+  background: #111; color: #fff; font-size: .78rem; font-weight: 700; letter-spacing: .04em;
+  padding: 9px 22px; border-radius: 99px; z-index: 200;
+  opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.err { background: #ef4444; }
+
+/* ── LOGIN ── */
+#login-screen {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: #f4f4f6; flex-direction: column;
+  align-items: center; justify-content: center; padding: 24px;
+}
+#login-screen.visible { display: flex; }
+.login-box {
+  background: #fff; border-radius: 20px; padding: 32px 24px;
+  width: 100%; max-width: 360px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  display: flex; flex-direction: column; gap: 0;
+}
+.login-logo { font-size: 2.8rem; text-align: center; margin-bottom: 6px; }
+.login-title { font-size: 1.3rem; font-weight: 800; text-align: center; margin-bottom: 4px; }
+.login-sub { font-size: .8rem; color: #aaa; text-align: center; margin-bottom: 28px; }
+.login-label { font-size: .68rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; display: block; }
+.login-input-wrap { position: relative; margin-bottom: 20px; }
+.login-input {
+  width: 100%; background: #f7f7f9; border: 1.5px solid #e8e8e8; border-radius: 10px;
+  color: #111; font-family: inherit; font-size: 1rem; padding: 12px 44px 12px 14px;
+  outline: none; transition: border-color .15s; letter-spacing: .1em;
+}
+.login-input:focus { border-color: #111; background: #fff; }
+.login-eye {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #aaa;
+  padding: 4px; line-height: 1;
+}
+.login-err { font-size: .78rem; color: #ef4444; text-align: center; margin-bottom: 14px; min-height: 1.2em; }
+.login-btn {
+  width: 100%; background: #111; color: #fff; border: none; border-radius: 10px;
+  padding: 13px; font-size: .95rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: background .12s; margin-bottom: 14px;
+}
+.login-btn:active { background: #333; }
+.login-setup { font-size: .72rem; color: #aaa; text-align: center; }
+.login-setup a, .link-btn {
+  color: #111; font-weight: 700; cursor: pointer;
+  text-decoration: underline; background: none; border: none;
+  font-family: inherit; font-size: inherit; padding: 0;
+}
+.login-setup .link-btn:active { opacity: .6; }
+
+/* Bouton logout dans header */
+.btn-logout {
+  background: #fff; border: 1.5px solid #e0e0e0; border-radius: 10px;
+  padding: 7px 12px; font-size: .78rem; font-weight: 600; cursor: pointer;
+  color: #ef4444; transition: background .12s;
+}
+.btn-logout:active { background: #fff5f5; }
+
+/* ── ARCHIVE ── */
+.archive-card {
+  background: #fff; border-radius: 14px; padding: 14px;
+  margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  display: flex; align-items: center; gap: 10px;
+}
+.archive-info { flex: 1; min-width: 0; }
+.archive-name { font-size: .92rem; font-weight: 700; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.archive-meta { font-size: .7rem; color: #aaa; margin-top: 2px; }
+.archive-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.hidden { display: none !important; }
+.mt10 { margin-top: 10px; }
+</style>
+</head>
+<body>
+<!-- ═══════════════ MODAL SETUP MDP ═══════════════ -->
+<div id="setup-pwd-modal" style="
+  display:none; position:fixed; inset:0; z-index:600;
+  background:rgba(0,0,0,.4); align-items:center; justify-content:center; padding:24px;">
+  <style>#setup-pwd-modal.visible{display:flex!important;}</style>
+  <div style="background:#fff;border-radius:20px;padding:28px 22px;width:100%;max-width:360px;">
+    <div style="font-size:1.05rem;font-weight:800;margin-bottom:18px;">🔑 Définir un mot de passe</div>
+    <span class="login-label">Nouveau mot de passe</span>
+    <div class="login-input-wrap" style="margin-bottom:14px">
+      <input type="password" id="setup-pwd-1" class="login-input" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')document.getElementById('setup-pwd-2').focus()">
+    </div>
+    <span class="login-label">Confirmer le mot de passe</span>
+    <div class="login-input-wrap" style="margin-bottom:6px">
+      <input type="password" id="setup-pwd-2" class="login-input" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')confirmSetupPwd()">
+    </div>
+    <div id="setup-pwd-err" style="font-size:.78rem;color:#ef4444;min-height:1.4em;margin-bottom:14px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="flex:1" onclick="document.getElementById('setup-pwd-modal').classList.remove('visible')">Annuler</button>
+      <button class="btn btn-dark" style="flex:1" onclick="confirmSetupPwd()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🏸</div>
+    <div class="login-title">BadmintonClub</div>
+    <div class="login-sub">Connectez-vous pour accéder à l'application</div>
+
+    <span class="login-label">Mot de passe</span>
+    <div class="login-input-wrap">
+      <input type="password" id="login-pwd" class="login-input"
+        placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="login-eye" onclick="togglePwdVisibility()" id="eye-btn">👁</button>
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" onclick="doLogin()">Connexion</button>
+    <div class="login-setup" id="login-setup-hint"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header>
+    <h1>🏸 Badminton</h1>
+    <div class="hdr-actions">
+      <button class="hdr-btn" onclick="exportJSON()">↑ Export</button>
+      <button class="hdr-btn" onclick="document.getElementById('fi').click()">↓ Import</button>
+      <input type="file" id="fi" accept=".json" class="hidden" onchange="importJSON(event)">
+      <button class="btn-logout" onclick="doLogout()">⏻ Quitter</button>
+    </div>
+  </header>
+
+  <div id="screens">
+
+    <!-- ── JOUEURS ── -->
+    <div id="screen-joueurs" class="screen active">
+      <div class="stats-row" id="stats-joueurs"></div>
+      <div class="card">
+        <div class="card-title">Liste des joueurs</div>
+        <div id="player-list"></div>
+        <button class="btn btn-dark btn-full mt10" onclick="openAddPlayer()">+ Ajouter un joueur</button>
+      </div>
+    </div>
+
+    <!-- ── ROTATIONS ── -->
+    <div id="screen-rotations" class="screen">
+      <div class="params-row">
+        <div class="param-card">
+          <div class="param-label">Terrains</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepParam('terrains',-1)">−</button>
+            <input type="number" id="param-terrains" value="5" min="1" max="20" onchange="saveParams()">
+            <button class="step-btn" onclick="stepParam('terrains',1)">+</button>
+          </div>
+        </div>
+        <div class="param-card">
+          <div class="param-label">Rotations</div>
+          <div class="stepper">
+            <button class="step-btn" onclick="stepParam('rotations',-1)">−</button>
+            <input type="number" id="param-rotations" value="10" min="1" max="20" onchange="saveParams()">
+            <button class="step-btn" onclick="stepParam('rotations',1)">+</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-dark btn-full" onclick="generateRotations()" style="margin-bottom:8px">Générer les rotations</button>
+      <button class="btn btn-full btn-sm btn-danger" id="btn-clear" onclick="clearRotations()" style="display:none">Effacer les rotations</button>
+      <div id="rotations-list" style="margin-top:14px"></div>
+    </div>
+
+    <!-- ── SCORES ── -->
+    <div id="screen-scores" class="screen">
+      <div id="scores-list"></div>
+    </div>
+
+    <!-- ── CLASSEMENT ── -->
+    <div id="screen-classement" class="screen">
+      <div id="classement-content"></div>
+    </div>
+
+    <!-- ── ARCHIVES ── -->
+    <div id="screen-archives" class="screen">
+      <div id="archives-content"></div>
+    </div>
+
+  </div>
+
+  <!-- TABS -->
+  <nav>
+    <button class="tab-btn active" data-tab="joueurs" onclick="switchTab('joueurs')">
+      <span class="ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <!-- groupe de 3 personnes -->
+          <circle cx="12" cy="7" r="3"/>
+          <path d="M12 11c-3.5 0-6 1.8-6 4v1h12v-1c0-2.2-2.5-4-6-4z"/>
+          <circle cx="5.5" cy="8" r="2.3"/>
+          <path d="M5.5 11.5C3.2 11.5 1.5 13 1.5 14.8V15.5h5.2v-.7c0-.9.3-1.7.8-2.4-.6-.6-1.3-.9-2-.9z"/>
+          <circle cx="18.5" cy="8" r="2.3"/>
+          <path d="M18.5 11.5c-.7 0-1.4.3-2 .9.5.7.8 1.5.8 2.4v.7h5.2v-.7c0-1.8-1.7-3.3-4-3.3z"/>
+        </svg>
+      </span>Joueurs
+    </button>
+    <button class="tab-btn" data-tab="rotations" onclick="switchTab('rotations')">
+      <span class="ico">↺</span>Rotations
+    </button>
+    <button class="tab-btn" data-tab="scores" onclick="switchTab('scores')">
+      <span class="ico">✎</span>Scores
+    </button>
+    <button class="tab-btn" data-tab="classement" onclick="switchTab('classement')">
+      <span class="ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 2h12v2H6z"/>
+          <path d="M5 4h14c0 5-2.5 8.5-6 9.8V16h2v2H9v-2h2v-2.2C7.5 12.5 5 9 5 4z"/>
+          <path d="M3 4h2c0 2.5.8 4.5 2 6C5 9.5 3 7.5 3 4z"/>
+          <path d="M21 4h-2c0 2.5-.8 4.5-2 6 1.2-.5 4-2.5 4-6z"/>
+          <rect x="8" y="18" width="8" height="2" rx=".5"/>
+          <rect x="7" y="20" width="10" height="2" rx=".5"/>
+        </svg>
+      </span>Classement
+    </button>
+    <button class="tab-btn" data-tab="archives" onclick="switchTab('archives')">
+      <span class="ico">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+          <!-- 3 classeurs -->
+          <rect x="3" y="2" width="5" height="18" rx="1"/>
+          <line x1="4.5" y1="5" x2="6.5" y2="5"/>
+          <line x1="4.5" y1="7.5" x2="6.5" y2="7.5"/>
+          <line x1="4.5" y1="10" x2="6.5" y2="10"/>
+          <circle cx="5.5" cy="17" r="1"/>
+          <rect x="9.5" y="2" width="5" height="18" rx="1"/>
+          <line x1="11" y1="5" x2="13" y2="5"/>
+          <line x1="11" y1="7.5" x2="13" y2="7.5"/>
+          <line x1="11" y1="10" x2="13" y2="10"/>
+          <circle cx="12" cy="17" r="1"/>
+          <g transform="rotate(15, 19, 11)">
+            <rect x="16" y="2" width="5" height="18" rx="1"/>
+            <line x1="17.5" y1="5" x2="19.5" y2="5"/>
+            <line x1="17.5" y1="7.5" x2="19.5" y2="7.5"/>
+            <line x1="17.5" y1="10" x2="19.5" y2="10"/>
+            <circle cx="18.5" cy="17" r="1"/>
+          </g>
+        </svg>
+      </span>Archives
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL JOUEUR -->
+<div class="modal-overlay" id="modal-player" onclick="closeModalIfBg(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Ajouter un joueur</div>
+    <span class="form-label">Prénom</span>
+    <input type="text" id="modal-name" placeholder="Prénom du joueur" maxlength="30" autocomplete="off">
+    <div style="margin-top:14px">
+      <span class="form-label">Sexe</span>
+      <div class="sex-toggle">
+        <button class="sex-btn" id="sex-h" onclick="selectSex('H')">♂ Homme</button>
+        <button class="sex-btn" id="sex-f" onclick="selectSex('F')">♀ Femme</button>
+      </div>
+    </div>
+    <div class="modal-row">
+      <button class="btn" onclick="closeModal('modal-player')">Annuler</button>
+      <button class="btn btn-dark" onclick="savePlayer()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOM SAISON -->
+<div class="modal-overlay" id="modal-saison" onclick="closeModalIfBg(event)">
+  <div class="modal">
+    <div class="modal-title">Archiver la saison</div>
+    <span class="form-label">Nom de la saison</span>
+    <input type="text" id="saison-name" placeholder="ex : Saison 2025" maxlength="50" autocomplete="off">
+    <div id="saison-err" style="font-size:.78rem;color:#ef4444;min-height:1.2em;margin-top:6px"></div>
+    <p style="font-size:.75rem;color:#888;margin-top:10px;line-height:1.5">
+      Toutes les séances archivées seront regroupées dans cette saison.<br>
+      Leurs statistiques seront cumulées pour établir le classement annuel.
+    </p>
+    <div class="modal-row">
+      <button class="btn" onclick="closeModal('modal-saison')">Annuler</button>
+      <button class="btn btn-dark" onclick="confirmSaison()">Archiver</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL APRÈS ARCHIVAGE SAISON -->
+<div class="modal-overlay" id="modal-after-saison">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:2rem;margin-bottom:8px">📅</div>
+    <div class="modal-title" style="text-align:center">Saison archivée !</div>
+    <p style="font-size:.85rem;color:#666;margin-bottom:22px;line-height:1.6">
+      Voulez-vous remettre à zéro les séances, rotations et scores pour démarrer une nouvelle saison ?<br>
+      <span style="font-size:.75rem;color:#aaa">(La liste de joueurs est conservée)</span>
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-dark btn-full" onclick="resetForNewSaison()">🔄 Nouvelle saison</button>
+      <button class="btn btn-full" onclick="closeModal('modal-after-saison');toast('Saison archivée ✓')">Garder les données actuelles</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DÉTAIL SAISON -->
+<div class="modal-overlay" id="modal-saison-detail" onclick="closeModalIfBg(event)">
+  <div class="modal" style="max-height:92vh">
+    <div class="modal-title" id="saison-detail-title"></div>
+    <div id="saison-detail-body" style="max-height:65vh;overflow-y:auto;margin-bottom:16px"></div>
+    <button class="btn btn-full" onclick="closeModal('modal-saison-detail')">Fermer</button>
+  </div>
+</div>
+
+<!-- MODAL APRÈS ARCHIVAGE SÉANCE -->
+<div class="modal-overlay" id="modal-after-archive">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:2rem;margin-bottom:8px">📦</div>
+    <div class="modal-title" style="text-align:center">Séance archivée !</div>
+    <p style="font-size:.85rem;color:#666;margin-bottom:22px;line-height:1.6">
+      Voulez-vous remettre les rotations et scores à zéro<br>pour démarrer une nouvelle séance ?<br>
+      <span style="font-size:.75rem;color:#aaa">(La liste de joueurs est conservée)</span>
+    </p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-dark btn-full" onclick="resetForNewSession()">🔄 Nouvelle séance</button>
+      <button class="btn btn-full" onclick="closeModal('modal-after-archive');toast('Séance archivée ✓')">Garder les rotations actuelles</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ARCHIVE (nom de séance) -->
+<div class="modal-overlay" id="modal-archive" onclick="closeModalIfBg(event)">
+  <div class="modal">
+    <div class="modal-title">Archiver la séance</div>
+    <span class="form-label">Nom de la séance</span>
+    <input type="text" id="archive-name" placeholder="ex : Séance du 7 juin" maxlength="50" autocomplete="off">
+    <div class="modal-row">
+      <button class="btn" onclick="closeModal('modal-archive')">Annuler</button>
+      <button class="btn btn-dark" onclick="confirmArchive()">Archiver</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DÉTAIL ARCHIVE -->
+<div class="modal-overlay" id="modal-archive-detail" onclick="closeModalIfBg(event)">
+  <div class="modal" style="max-height:90vh">
+    <div class="modal-title" id="archive-detail-title"></div>
+    <div id="archive-detail-body" style="font-size:.82rem;color:#555;line-height:1.7;max-height:55vh;overflow-y:auto;margin-bottom:16px"></div>
+    <div class="modal-row">
+      <button class="btn" onclick="closeModal('modal-archive-detail')">Fermer</button>
+      <button class="btn btn-dark" id="archive-restore-btn">↩ Reprendre</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================================================================
+   ÉTAT & PERSISTANCE
+   ================================================================ */
+let state = {
+  joueurs: [],
+  params: { terrains: 5, rotations: 10 },
+  rotations: [],
+  scores: {},
+  archives: [],   // [{id, nom, date, rotations, scores, joueurs, params}]
+  saisons: []     // [{id, nom, annee, date, archives:[...copies]}]
+};
+
+function saveState() { localStorage.setItem('badminton_club_v2', JSON.stringify(state)); }
+function loadState() {
+  const raw = localStorage.getItem('badminton_club_v2');
+  if (raw) { try { state = { ...state, ...JSON.parse(raw) }; } catch(e){} }
+}
+function exportJSON() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type:'application/json' }));
+  a.download = 'badminton_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click(); toast('Export réussi');
+}
+function importJSON(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try { state = JSON.parse(ev.target.result); saveState(); renderAll(); toast('Import réussi'); }
+    catch { toast('Fichier invalide', true); }
+  };
+  r.readAsText(file); e.target.value = '';
+}
+
+/* ================================================================
+   NAVIGATION & TOAST
+   ================================================================ */
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.querySelector('[data-tab="' + tab + '"]').classList.add('active');
+  document.getElementById('screens').scrollTop = 0;
+  if (tab === 'scores') renderScores();
+  if (tab === 'classement') renderClassement();
+  if (tab === 'archives') renderArchives();
+}
+function toast(msg, err=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = err ? 'err show' : 'show';
+  setTimeout(() => el.className = '', 2400);
+}
+
+/* ================================================================
+   JOUEURS
+   ================================================================ */
+let editId = null, modalSex = 'H';
+
+function openAddPlayer() {
+  editId = null; modalSex = 'H';
+  document.getElementById('modal-title').textContent = 'Ajouter un joueur';
+  document.getElementById('modal-name').value = '';
+  updateSexBtns(); openModal('modal-player');
+  setTimeout(() => document.getElementById('modal-name').focus(), 200);
+}
+function openEditPlayer(id) {
+  const p = state.joueurs.find(j => j.id === id); if (!p) return;
+  editId = id; modalSex = p.sexe;
+  document.getElementById('modal-title').textContent = 'Modifier le joueur';
+  document.getElementById('modal-name').value = p.nom;
+  updateSexBtns(); openModal('modal-player');
+}
+function selectSex(s) { modalSex = s; updateSexBtns(); }
+function updateSexBtns() {
+  document.getElementById('sex-h').className = 'sex-btn' + (modalSex==='H' ? ' sel-h' : '');
+  document.getElementById('sex-f').className = 'sex-btn' + (modalSex==='F' ? ' sel-f' : '');
+}
+function savePlayer() {
+  const nom = document.getElementById('modal-name').value.trim();
+  if (!nom) { toast('Prénom requis', true); return; }
+  if (editId === null) {
+    state.joueurs.push({ id: Date.now(), nom, sexe: modalSex });
+  } else {
+    const p = state.joueurs.find(j => j.id === editId);
+    if (p) { p.nom = nom; p.sexe = modalSex; }
+  }
+  saveState(); closeModal('modal-player'); renderJoueurs();
+}
+function deletePlayer(id) {
+  if (!confirm('Supprimer ce joueur ?')) return;
+  state.joueurs = state.joueurs.filter(j => j.id !== id);
+  saveState(); renderJoueurs();
+}
+
+function renderJoueurs() {
+  const total = state.joueurs.length;
+  const nbF = state.joueurs.filter(j => j.sexe==='F').length;
+  const nbH = total - nbF;
+  document.getElementById('stats-joueurs').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Joueurs</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#3b82f6">${nbH}</div><div class="stat-lbl">Hommes</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#ec4899">${nbF}</div><div class="stat-lbl">Femmes</div></div>
+  `;
+  const list = document.getElementById('player-list');
+  if (!state.joueurs.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-ico">👤</div><p>Aucun joueur.<br>Ajoutez des joueurs pour commencer.</p></div>`;
+    return;
+  }
+  list.innerHTML = state.joueurs.map(p => `
+    <div class="player-row">
+      <span class="p-sex-badge ${p.sexe.toLowerCase()}">${p.sexe}</span>
+      <span class="p-name sexe-${p.sexe.toLowerCase()}">${esc(p.nom)}</span>
+      <button class="btn btn-ghost btn-sm" onclick="openEditPlayer(${p.id})">✏</button>
+      <button class="btn btn-ghost btn-sm" style="color:#ef4444" onclick="deletePlayer(${p.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+/* ================================================================
+   PARAMÈTRES & GÉNÉRATION
+   ================================================================ */
+function saveParams() {
+  state.params.terrains = parseInt(document.getElementById('param-terrains').value) || 5;
+  state.params.rotations = parseInt(document.getElementById('param-rotations').value) || 10;
+  saveState();
+}
+function stepParam(p, d) {
+  const el = document.getElementById('param-' + p);
+  el.value = Math.max(1, Math.min(20, parseInt(el.value) + d));
+  saveParams();
+}
+
+function generateRotations() {
+  if (state.joueurs.length < 4) { toast('Il faut au moins 4 joueurs', true); return; }
+  saveParams();
+  const { terrains, rotations: nbRot } = state.params;
+  const joueurs = [...state.joueurs];
+  const matchCount = {}, benchCount = {};
+  joueurs.forEach(j => { matchCount[j.id]=0; benchCount[j.id]=0; });
+  const pairHist = new Set(), duelHist = new Set();
+  const result = [];
+
+  for (let r = 0; r < nbRot; r++) {
+    const ladiesRound = (r % 2 === 1);
+    const sorted = [...joueurs].sort((a,b) => {
+      const d = (matchCount[a.id]+benchCount[a.id]*.1)-(matchCount[b.id]+benchCount[b.id]*.1);
+      return d !== 0 ? d : (Math.random()-.5)*.5;
+    });
+    const playCount = Math.floor(Math.min(terrains*4, joueurs.length)/4)*4;
+    const benched = sorted.slice(playCount);
+    const femmes = sorted.filter(j=>j.sexe==='H'?false:true);
+    let tMatches = [];
+
+    if (ladiesRound && femmes.filter(f=>!benched.includes(f)).length >= 4) {
+      const avF = femmes.filter(f=>!benched.includes(f)).slice(0,4);
+      tMatches.push(buildMatch(avF[0],avF[1],avF[2],avF[3],'Double Dames',pairHist,duelHist));
+    }
+    const used = tMatches.flatMap(m=>[...m.eqA,...m.eqB]);
+    const pool = sorted.filter(p=>!used.includes(p)&&!benched.includes(p));
+    fillTerrains(tMatches, pool, terrains - tMatches.length, pairHist, duelHist);
+
+    const assigned = tMatches.flatMap(m=>[...m.eqA,...m.eqB]);
+    const actualBenched = joueurs.filter(j=>!assigned.includes(j));
+    assigned.forEach(j=>matchCount[j.id]++);
+    actualBenched.forEach(j=>benchCount[j.id]++);
+    tMatches.forEach(m=>{
+      pairHist.add(pairKey(m.eqA[0],m.eqA[1]));
+      pairHist.add(pairKey(m.eqB[0],m.eqB[1]));
+      duelHist.add(duelKey(m.eqA,m.eqB));
+    });
+    result.push({ num:r+1, ladiesRound, terrains:tMatches, remplacants:actualBenched });
+  }
+  state.rotations = result; state.scores = {};
+  saveState(); renderRotations(); toast('Rotations générées');
+}
+
+function fillTerrains(matches, pool, nb, pH, dH) {
+  let rem = [...pool];
+  for (let t=0; t<nb && rem.length>=4; t++) {
+    const h=rem.filter(j=>j.sexe==='H'), f=rem.filter(j=>j.sexe==='F');
+    let c4;
+    if (h.length>=2&&f.length>=2) c4=findBestMixte(h,f,pH,dH);
+    else if (h.length>=4) c4=findBestQuad(h.slice(0,6),pH,dH);
+    else if (f.length>=4) c4=findBestQuad(f.slice(0,6),pH,dH);
+    else c4=rem.slice(0,4);
+    if (!c4||c4.length<4) c4=rem.slice(0,4);
+    matches.push(buildMatch(c4[0],c4[1],c4[2],c4[3],detectType(c4),pH,dH));
+    c4.forEach(p=>{rem=rem.filter(r=>r!==p);});
+  }
+}
+function findBestMixte(h,f,pH,dH) {
+  let best=null,bs=Infinity;
+  const hc=h.slice(0,4),fc=f.slice(0,4);
+  for(let hi=0;hi<hc.length;hi++)for(let hj=hi+1;hj<hc.length;hj++)
+  for(let fi=0;fi<fc.length;fi++)for(let fj=fi+1;fj<fc.length;fj++){
+    const h1=hc[hi],h2=hc[hj],f1=fc[fi],f2=fc[fj];
+    const s1=countAlerts([h1,f1],[h2,f2],pH,dH);if(s1<bs){bs=s1;best=[h1,f1,h2,f2];}
+    const s2=countAlerts([h1,f2],[h2,f1],pH,dH);if(s2<bs){bs=s2;best=[h1,f2,h2,f1];}
+  }
+  return best;
+}
+function findBestQuad(p,pH,dH){
+  let best=null,bs=Infinity;
+  for(let i=0;i<p.length;i++)for(let j=i+1;j<p.length;j++)
+  for(let k=j+1;k<p.length;k++)for(let l=k+1;l<p.length;l++){
+    const s=countAlerts([p[i],p[j]],[p[k],p[l]],pH,dH);
+    if(s<bs){bs=s;best=[p[i],p[j],p[k],p[l]];}
+  }
+  return best||p.slice(0,4);
+}
+function countAlerts(eqA,eqB,pH,dH){
+  return(pH.has(pairKey(eqA[0],eqA[1]))?1:0)+(pH.has(pairKey(eqB[0],eqB[1]))?1:0)+(dH.has(duelKey(eqA,eqB))?1:0);
+}
+function buildMatch(p1,p2,p3,p4,type,pH,dH){
+  const eqA=[p1,p2],eqB=[p3,p4],alerts=[];
+  if(pH.has(pairKey(eqA[0],eqA[1])))alerts.push('Paire A déjà vue');
+  if(pH.has(pairKey(eqB[0],eqB[1])))alerts.push('Paire B déjà vue');
+  if(dH.has(duelKey(eqA,eqB)))alerts.push('Adversaires déjà vus');
+  return{eqA,eqB,type,alerts};
+}
+function detectType(four){
+  const nb=four.filter(j=>j.sexe==='H').length;
+  return nb===4?'Double Hommes':nb===0?'Double Dames':'Double Mixte';
+}
+function pairKey(a,b){return[a.id,b.id].sort((x,y)=>x-y).join('-');}
+function duelKey(eqA,eqB){
+  const tA=[...eqA].map(j=>j.id).sort((a,b)=>a-b).join('-');
+  const tB=[...eqB].map(j=>j.id).sort((a,b)=>a-b).join('-');
+  return[tA,tB].sort().join('|');
+}
+function clearRotations(){
+  if(!confirm('Effacer toutes les rotations et scores ?'))return;
+  state.rotations=[];state.scores={};
+  saveState();renderRotations();toast('Effacé');
+}
+
+/* ================================================================
+   RENDU ROTATIONS
+   ================================================================ */
+function typeClass(t){return t==='Double Mixte'?'dm':t==='Double Dames'?'dd':'dh';}
+function typeShort(t){return t==='Double Mixte'?'Mixte':t==='Double Dames'?'Dames':'Hommes';}
+
+function renderRotations(){
+  document.getElementById('param-terrains').value=state.params.terrains;
+  document.getElementById('param-rotations').value=state.params.rotations;
+  const cont=document.getElementById('rotations-list');
+  document.getElementById('btn-clear').style.display=state.rotations&&state.rotations.length?'':'none';
+  if(!state.rotations||!state.rotations.length){
+    cont.innerHTML=`<div class="empty"><div class="empty-ico">↺</div><p>Aucune rotation générée.<br>Configurez puis générez.</p></div>`;
+    return;
+  }
+  cont.innerHTML=state.rotations.map(rot=>{
+    const rows=rot.terrains.map((m,ti)=>{
+      const key=`${rot.num}-${ti+1}`;
+      const sc=state.scores[key]||{};
+      let res='';
+      if(sc.a!==undefined&&sc.a!==''&&sc.b!==undefined&&sc.b!==''){
+        const a=parseInt(sc.a),b=parseInt(sc.b);
+        res=a>b?`<span style="color:#16a34a;font-weight:700">A gagne</span>`:b>a?`<span style="color:#ef4444;font-weight:700">B gagne</span>`:`<span style="color:#f59e0b;font-weight:700">Égalité</span>`;
+      }
+      const alertsHtml=m.alerts.map(a=>`<div>⚠ ${a}</div>`).join('');
+      return`<div class="match-row">
+        <div class="t-num">${ti+1}</div>
+        <div class="team-block">
+          <div class="team-a">${esc(m.eqA[0].nom)}</div>
+          <div class="team-b">& ${esc(m.eqA[1].nom)}</div>
+        </div>
+        <div class="vs-lbl">vs</div>
+        <div class="team-block">
+          <div class="team-a">${esc(m.eqB[0].nom)}</div>
+          <div class="team-b">& ${esc(m.eqB[1].nom)}</div>
+        </div>
+        <div class="match-meta">
+          <span class="m-type-tag ${typeClass(m.type)}">${typeShort(m.type)}</span>
+          ${alertsHtml?`<div class="m-alerts">${alertsHtml}</div>`:''}
+          ${res?`<div class="m-result">${res}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+    const rNoms=rot.remplacants.map(j=>j.nom).join(', ');
+    return`<div class="rot-block">
+      <div class="rot-head">
+        <span class="rot-num">Rotation ${rot.num}</span>
+        ${rot.ladiesRound?'<span class="rot-ladies">🎀 Double Dames inclus</span>':''}
+      </div>
+      ${rows}
+      ${rNoms?`<div class="rempl"><strong>Remplaçants :</strong> ${esc(rNoms)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+/* ================================================================
+   SCORES
+   ================================================================ */
+function renderScores(){
+  const cont=document.getElementById('scores-list');
+  if(!state.rotations||!state.rotations.length){
+    cont.innerHTML=`<div class="empty"><div class="empty-ico">✎</div><p>Générez d'abord les rotations.</p></div>`;
+    return;
+  }
+  cont.innerHTML=state.rotations.map(rot=>{
+    const matches=rot.terrains.map((m,ti)=>{
+      const key=`${rot.num}-${ti+1}`;
+      const sc=state.scores[key]||{a:'',b:''};
+      let tagA='',tagB='';
+      if(sc.a!==''&&sc.b!==''){
+        const a=parseInt(sc.a),b=parseInt(sc.b);
+        if(a>b){tagA='win';tagB='loss';}else if(b>a){tagA='loss';tagB='win';}else{tagA='draw';tagB='draw';}
+      }
+      const lbl=t=>t==='win'?'Victoire':t==='loss'?'Défaite':'Égalité';
+      return`<div class="score-match-block">
+        <div class="score-desc">
+          <strong>Terrain ${ti+1}</strong> —
+          ${esc(m.eqA[0].nom)} &amp; ${esc(m.eqA[1].nom)}
+          <span style="color:#ccc"> vs </span>
+          ${esc(m.eqB[0].nom)} &amp; ${esc(m.eqB[1].nom)}
+        </div>
+        <div class="score-row">
+          <div class="score-col">
+            <div class="score-lbl">${esc(m.eqA[0].nom)}<br>${esc(m.eqA[1].nom)}</div>
+            <input type="number" inputmode="numeric" class="score-field" min="0" max="99"
+              value="${sc.a}" oninput="updateScore('${key}','a',this.value)">
+            ${tagA?`<div class="score-tag ${tagA}">${lbl(tagA)}</div>`:''}
+          </div>
+          <div class="score-sep">—</div>
+          <div class="score-col">
+            <div class="score-lbl">${esc(m.eqB[0].nom)}<br>${esc(m.eqB[1].nom)}</div>
+            <input type="number" inputmode="numeric" class="score-field" min="0" max="99"
+              value="${sc.b}" oninput="updateScore('${key}','b',this.value)">
+            ${tagB?`<div class="score-tag ${tagB}">${lbl(tagB)}</div>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return`<div class="rot-block" style="margin-bottom:14px">
+      <div class="score-rot-head">Rotation ${rot.num}${rot.ladiesRound?' · 🎀 Double Dames':''}</div>
+      ${matches}
+    </div>`;
+  }).join('');
+}
+
+function updateScore(key,team,val){
+  if(!state.scores[key])state.scores[key]={a:'',b:''};
+  state.scores[key][team]=val===''?'':Math.max(0,parseInt(val)||0).toString();
+  saveState();
+  const sc=state.scores[key];
+  const parent=event.target.closest('.score-match-block');
+  if(!parent||sc.a===''||sc.b==='')return;
+  const a=parseInt(sc.a),b=parseInt(sc.b);
+  const classes=a>b?['win','loss']:b>a?['loss','win']:['draw','draw'];
+  const labels=classes.map(c=>c==='win'?'Victoire':c==='loss'?'Défaite':'Égalité');
+  parent.querySelectorAll('.score-tag').forEach(el=>el.remove());
+  parent.querySelectorAll('.score-col').forEach((col,i)=>{
+    const d=document.createElement('div');
+    d.className=`score-tag ${classes[i]}`;d.textContent=labels[i];col.appendChild(d);
+  });
+}
+
+/* ================================================================
+   CLASSEMENT
+   ================================================================ */
+function renderClassement(){
+  const cont=document.getElementById('classement-content');
+  if(!state.joueurs.length){
+    cont.innerHTML=`<div class="empty"><div class="empty-ico">🏆</div><p>Aucun joueur enregistré.</p></div>`;
+    return;
+  }
+  const stats={};
+  state.joueurs.forEach(j=>{stats[j.id]={j,V:0,E:0,D:0,pM:0,pE:0};});
+  (state.rotations||[]).forEach(rot=>{
+    rot.terrains.forEach((m,ti)=>{
+      const sc=state.scores[`${rot.num}-${ti+1}`];
+      if(!sc||sc.a===''||sc.b==='')return;
+      const a=parseInt(sc.a),b=parseInt(sc.b);
+      m.eqA.forEach(j=>{
+        if(!stats[j.id])return;
+        stats[j.id].pM+=a; stats[j.id].pE+=b;
+        if(a>b)stats[j.id].V++; else if(a===b)stats[j.id].E++; else stats[j.id].D++;
+      });
+      m.eqB.forEach(j=>{
+        if(!stats[j.id])return;
+        stats[j.id].pM+=b; stats[j.id].pE+=a;
+        if(b>a)stats[j.id].V++; else if(a===b)stats[j.id].E++; else stats[j.id].D++;
+      });
+    });
+  });
+  // Tri : Score décroissant, puis Diff décroissant
+  const rows=Object.values(stats).sort((a,b)=>{
+    const sA=a.V*3+a.E*1, sB=b.V*3+b.E*1;
+    if(sB!==sA)return sB-sA;
+    return(b.pM-b.pE)-(a.pM-a.pE);
+  });
+  const medals=['🥇','🥈','🥉'];
+  const trs=rows.map((s,i)=>{
+    const diff=s.pM-s.pE;
+    const dHtml=diff>0?`<span class="diff-p">+${diff}</span>`:diff<0?`<span class="diff-n">${diff}</span>`:'0';
+    const rk=i<3?`<span class="rk-icon">${medals[i]}</span>`:`<span class="rk-num">${i+1}</span>`;
+    const score=s.V*3+s.E*1;
+    const nc=s.j.sexe==='H'?'sexe-h':'sexe-f';
+    return`<tr>
+      <td>${rk}<span class="rank-name ${nc}">${esc(s.j.nom)}</span></td>
+      <td class="col-v">${s.V}</td>
+      <td class="col-e">${s.E}</td>
+      <td class="col-d">${s.D}</td>
+      <td>${s.pM}</td><td>${s.pE}</td>
+      <td>${dHtml}</td>
+      <td class="col-score">${score}</td>
+    </tr>`;
+  }).join('');
+
+  cont.innerHTML=`
+    <div class="card">
+      <div class="card-title">Classement général</div>
+      <div class="rank-wrap">
+        <table class="rank">
+          <thead><tr><th>Joueur</th><th>V</th><th>É</th><th>D</th><th>Pts+</th><th>Pts−</th><th>Diff</th><th>Score</th></tr></thead>
+          <tbody>${trs}</tbody>
+        </table>
+      </div>
+      <p style="margin-top:10px;font-size:.65rem;color:#bbb;letter-spacing:.04em">Score : Victoire = 3 pts · Égalité = 1 pt · Défaite = 0 pt</p>
+    </div>`;
+}
+
+/* ================================================================
+   ARCHIVES
+   ================================================================ */
+function openArchiveModal() {
+  if (!state.rotations || !state.rotations.length) {
+    toast('Aucune rotation à archiver', true); return;
+  }
+  // Proposer un nom par défaut avec la date
+  const d = new Date();
+  const fmt = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+  document.getElementById('archive-name').value = 'Séance du ' + fmt;
+  openModal('modal-archive');
+  setTimeout(() => { const el = document.getElementById('archive-name'); el.focus(); el.select(); }, 200);
+}
+
+function confirmArchive() {
+  const nom = document.getElementById('archive-name').value.trim();
+  if (!nom) { toast('Nom requis', true); return; }
+
+  if (!state.archives) state.archives = [];
+
+  // Snapshot complet de la séance
+  const archive = {
+    id: Date.now(),
+    nom,
+    date: new Date().toISOString(),
+    joueurs: JSON.parse(JSON.stringify(state.joueurs)),
+    params: JSON.parse(JSON.stringify(state.params)),
+    rotations: JSON.parse(JSON.stringify(state.rotations)),
+    scores: JSON.parse(JSON.stringify(state.scores))
+  };
+
+  state.archives.unshift(archive);
+  saveState();
+  closeModal('modal-archive');
+  renderArchives();
+
+  // Proposer de remettre à zéro via un second modal dédié
+  document.getElementById('modal-after-archive').classList.add('open');
+}
+
+function resetForNewSession() {
+  state.rotations = [];
+  state.scores = {};
+  saveState();
+  closeModal('modal-after-archive');
+  renderRotations();
+  renderScores();
+  renderClassement();
+  toast('Nouvelle séance prête ✓');
+  switchTab('rotations');
+}
+
+let detailArchiveId = null;
+
+function openArchiveDetail(id) {
+  const arc = (state.archives || []).find(a => a.id === id);
+  if (!arc) return;
+  detailArchiveId = id;
+
+  document.getElementById('archive-detail-title').textContent = arc.nom;
+
+  // Calcul du classement de l'archive
+  const stats = {};
+  arc.joueurs.forEach(j => { stats[j.id] = { j, V:0, E:0, D:0, pM:0, pE:0 }; });
+  (arc.rotations || []).forEach(rot => {
+    rot.terrains.forEach((m, ti) => {
+      const sc = arc.scores[`${rot.num}-${ti+1}`];
+      if (!sc || sc.a === '' || sc.b === '') return;
+      const a = parseInt(sc.a), b = parseInt(sc.b);
+      m.eqA.forEach(j => { if(!stats[j.id])return; stats[j.id].pM+=a; stats[j.id].pE+=b; if(a>b)stats[j.id].V++; else if(a===b)stats[j.id].E++; else stats[j.id].D++; });
+      m.eqB.forEach(j => { if(!stats[j.id])return; stats[j.id].pM+=b; stats[j.id].pE+=a; if(b>a)stats[j.id].V++; else if(a===b)stats[j.id].E++; else stats[j.id].D++; });
+    });
+  });
+
+  const rows = Object.values(stats).sort((a, b) => {
+    const sA = a.V*3 + a.E, sB = b.V*3 + b.E;
+    if (sB !== sA) return sB - sA;
+    return (b.pM - b.pE) - (a.pM - a.pE);
+  });
+
+  const medals = ['🥇','🥈','🥉'];
+  const nbRot = arc.rotations ? arc.rotations.length : 0;
+  const nbMatchs = arc.rotations ? arc.rotations.reduce((s, r) => s + r.terrains.length, 0) : 0;
+  const dateStr = new Date(arc.date).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  const podiumHtml = rows.slice(0, Math.min(3, rows.length)).map((s, i) => {
+    const score = s.V*3 + s.E;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f5">
+      <span style="font-size:1rem">${medals[i]}</span>
+      <span style="font-weight:700;flex:1">${esc(s.j.nom)}</span>
+      <span style="font-size:.75rem;color:#888">${s.V}V ${s.E}É ${s.D}D — Score ${score}</span>
+    </div>`;
+  }).join('');
+
+  const allRows = rows.map((s, i) => {
+    const score = s.V*3 + s.E;
+    const diff = s.pM - s.pE;
+    return `<tr style="border-bottom:1px solid #f5f5f5">
+      <td style="padding:5px 6px;font-weight:600">${i<3?medals[i]:(i+1)+'.'} ${esc(s.j.nom)}</td>
+      <td style="padding:5px 6px;text-align:center;color:#16a34a;font-weight:700">${s.V}</td>
+      <td style="padding:5px 6px;text-align:center;color:#f59e0b;font-weight:700">${s.E}</td>
+      <td style="padding:5px 6px;text-align:center;color:#ef4444;font-weight:700">${s.D}</td>
+      <td style="padding:5px 6px;text-align:center;font-weight:800">${score}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('archive-detail-body').innerHTML = `
+    <div style="color:#aaa;font-size:.7rem;margin-bottom:12px">📅 ${dateStr} · ${arc.joueurs.length} joueurs · ${nbRot} rotations · ${nbMatchs} matchs</div>
+    <div style="margin-bottom:14px">${podiumHtml}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:.78rem">
+      <thead><tr style="background:#f8f8fa">
+        <th style="padding:6px;text-align:left;font-size:.62rem;color:#aaa;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Joueur</th>
+        <th style="padding:6px;text-align:center;font-size:.62rem;color:#aaa;font-weight:700">V</th>
+        <th style="padding:6px;text-align:center;font-size:.62rem;color:#aaa;font-weight:700">É</th>
+        <th style="padding:6px;text-align:center;font-size:.62rem;color:#aaa;font-weight:700">D</th>
+        <th style="padding:6px;text-align:center;font-size:.62rem;color:#aaa;font-weight:700">Score</th>
+      </tr></thead>
+      <tbody>${allRows}</tbody>
+    </table>
+  `;
+
+  document.getElementById('archive-restore-btn').onclick = () => restoreArchive(id);
+  openModal('modal-archive-detail');
+}
+
+function restoreArchive(id) {
+  const arc = (state.archives || []).find(a => a.id === id);
+  if (!arc) return;
+  if (!confirm(`Restaurer "${arc.nom}" ? Les rotations et scores actuels seront remplacés.`)) return;
+  state.rotations = JSON.parse(JSON.stringify(arc.rotations));
+  state.scores = JSON.parse(JSON.stringify(arc.scores));
+  state.params = JSON.parse(JSON.stringify(arc.params));
+  saveState();
+  closeModal('modal-archive-detail');
+  renderRotations(); renderScores(); renderClassement();
+  toast('Séance restaurée ✓');
+  switchTab('rotations');
+}
+
+function deleteArchive(id) {
+  if (!confirm('Supprimer cette archive ?')) return;
+  state.archives = (state.archives || []).filter(a => a.id !== id);
+  saveState(); renderArchives(); toast('Archive supprimée');
+}
+
+function renderArchives() {
+  const cont = document.getElementById('archives-content');
+  const archives = state.archives || [];
+  const saisons = state.saisons || [];
+
+  // Vue active : 'seances' ou 'saisons'
+  const view = cont.dataset.view || 'seances';
+
+  const tabBar = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;background:#f0f0f2;border-radius:12px;padding:3px;margin-bottom:14px;">
+      <button onclick="setArchiveView('seances')" style="padding:9px;border:none;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s;
+        background:${view==='seances'?'#fff':'transparent'};color:${view==='seances'?'#111':'#aaa'};
+        box-shadow:${view==='seances'?'0 1px 3px rgba(0,0,0,.1)':'none'}">
+        Séances (${archives.length})
+      </button>
+      <button onclick="setArchiveView('saisons')" style="padding:9px;border:none;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s;
+        background:${view==='saisons'?'#fff':'transparent'};color:${view==='saisons'?'#111':'#aaa'};
+        box-shadow:${view==='saisons'?'0 1px 3px rgba(0,0,0,.1)':'none'}">
+        Saisons (${saisons.length})
+      </button>
+    </div>
+  `;
+
+  if (view === 'seances') {
+    const btnArchive = `
+      <button class="btn btn-dark btn-full" style="margin-bottom:10px" onclick="openArchiveModal()">
+        + Archiver la séance actuelle
+      </button>
+      <button class="btn btn-full btn-sm" style="margin-bottom:14px;color:#555;border-color:#ddd" onclick="openSaisonModal()">
+        Clôturer et archiver la saison
+      </button>
+    `;
+    if (!archives.length) {
+      cont.innerHTML = tabBar + btnArchive + `<div class="empty">
+        <div class="empty-ico">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="2" width="5" height="18" rx="1"/>
+            <line x1="4.5" y1="5" x2="6.5" y2="5"/><line x1="4.5" y1="7.5" x2="6.5" y2="7.5"/><line x1="4.5" y1="10" x2="6.5" y2="10"/>
+            <circle cx="5.5" cy="17" r="1"/>
+            <rect x="9.5" y="2" width="5" height="18" rx="1"/>
+            <line x1="11" y1="5" x2="13" y2="5"/><line x1="11" y1="7.5" x2="13" y2="7.5"/><line x1="11" y1="10" x2="13" y2="10"/>
+            <circle cx="12" cy="17" r="1"/>
+            <g transform="rotate(15, 19, 11)">
+              <rect x="16" y="2" width="5" height="18" rx="1"/>
+              <line x1="17.5" y1="5" x2="19.5" y2="5"/><line x1="17.5" y1="7.5" x2="19.5" y2="7.5"/><line x1="17.5" y1="10" x2="19.5" y2="10"/>
+              <circle cx="18.5" cy="17" r="1"/>
+            </g>
+          </svg>
+        </div>
+        <p>Aucune séance archivée.</p>
+      </div>`;
+      return;
+    }
+    const cards = archives.map(arc => {
+      const dateStr = new Date(arc.date).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+      const nbRot = arc.rotations ? arc.rotations.length : 0;
+      const nbJ = arc.joueurs ? arc.joueurs.length : 0;
+      return `<div class="archive-card">
+        <div class="archive-info">
+          <div class="archive-name">${esc(arc.nom)}</div>
+          <div class="archive-meta">📅 ${dateStr} · ${nbJ} joueurs · ${nbRot} rotations</div>
+        </div>
+        <div class="archive-actions">
+          <button class="btn btn-sm" onclick="openArchiveDetail(${arc.id})" style="font-size:.75rem">Voir</button>
+          <button class="btn btn-sm btn-ghost" onclick="deleteArchive(${arc.id})" style="color:#ef4444;font-size:.85rem">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+    cont.innerHTML = tabBar + btnArchive +
+      `<div style="font-size:.65rem;color:#aaa;letter-spacing:.06em;text-transform:uppercase;font-weight:700;margin-bottom:10px">
+        ${archives.length} séance${archives.length>1?'s':''} archivée${archives.length>1?'s':''}
+      </div>${cards}`;
+
+  } else {
+    // Vue SAISONS
+    const btnSaison = `
+      <button class="btn btn-dark btn-full" style="margin-bottom:14px" onclick="openSaisonModal()">
+        Clôturer et archiver la saison
+      </button>
+    `;
+    if (!saisons.length) {
+      cont.innerHTML = tabBar + btnSaison + `<div class="empty">
+        <div class="empty-ico">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="2" width="5" height="18" rx="1"/>
+            <line x1="4.5" y1="5" x2="6.5" y2="5"/><line x1="4.5" y1="7.5" x2="6.5" y2="7.5"/><line x1="4.5" y1="10" x2="6.5" y2="10"/>
+            <circle cx="5.5" cy="17" r="1"/>
+            <rect x="9.5" y="2" width="5" height="18" rx="1"/>
+            <line x1="11" y1="5" x2="13" y2="5"/><line x1="11" y1="7.5" x2="13" y2="7.5"/><line x1="11" y1="10" x2="13" y2="10"/>
+            <circle cx="12" cy="17" r="1"/>
+            <g transform="rotate(15, 19, 11)">
+              <rect x="16" y="2" width="5" height="18" rx="1"/>
+              <line x1="17.5" y1="5" x2="19.5" y2="5"/><line x1="17.5" y1="7.5" x2="19.5" y2="7.5"/><line x1="17.5" y1="10" x2="19.5" y2="10"/>
+              <circle cx="18.5" cy="17" r="1"/>
+            </g>
+          </svg>
+        </div>
+        <p>Aucune saison archivée.<br>Clôturez une saison pour voir<br>les stats annuelles.</p>
+      </div>`;
+      return;
+    }
+    const cards = saisons.map(s => {
+      const dateStr = new Date(s.date).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+      const nbSeances = s.archives ? s.archives.length : 0;
+      const nbMatchs = (s.archives||[]).reduce((t, a) =>
+        t + (a.rotations||[]).reduce((r, rot) => r + rot.terrains.length, 0), 0);
+      return `<div class="archive-card" style="border-left:3px solid #111">
+        <div class="archive-info">
+          <div class="archive-name">${esc(s.nom)}</div>
+          <div class="archive-meta">📅 ${dateStr} · ${nbSeances} séance${nbSeances>1?'s':''} · ${nbMatchs} matchs</div>
+        </div>
+        <div class="archive-actions">
+          <button class="btn btn-sm" onclick="openSaisonDetail(${s.id})" style="font-size:.75rem">Stats</button>
+          <button class="btn btn-sm btn-ghost" onclick="deleteSaison(${s.id})" style="color:#ef4444;font-size:.85rem">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+    cont.innerHTML = tabBar + btnSaison +
+      `<div style="font-size:.65rem;color:#aaa;letter-spacing:.06em;text-transform:uppercase;font-weight:700;margin-bottom:10px">
+        ${saisons.length} saison${saisons.length>1?'s':''} archivée${saisons.length>1?'s':''}
+      </div>${cards}`;
+  }
+}
+
+function setArchiveView(v) {
+  document.getElementById('archives-content').dataset.view = v;
+  renderArchives();
+}
+
+/* ================================================================
+   SAISONS
+   ================================================================ */
+function openSaisonModal() {
+  if (!(state.archives||[]).length) {
+    toast('Aucune séance archivée à inclure dans la saison', true); return;
+  }
+  const year = new Date().getFullYear();
+  document.getElementById('saison-name').value = `Saison ${year}`;
+  document.getElementById('saison-err').textContent = '';
+  openModal('modal-saison');
+  setTimeout(() => { const el=document.getElementById('saison-name'); el.focus(); el.select(); }, 200);
+}
+
+function confirmSaison() {
+  const nom = document.getElementById('saison-name').value.trim();
+  if (!nom) { document.getElementById('saison-err').textContent = 'Nom requis'; return; }
+
+  if (!state.saisons) state.saisons = [];
+
+  const saison = {
+    id: Date.now(),
+    nom,
+    date: new Date().toISOString(),
+    archives: JSON.parse(JSON.stringify(state.archives || []))
+  };
+
+  state.saisons.unshift(saison);
+  saveState();
+  closeModal('modal-saison');
+  renderArchives();
+  document.getElementById('archives-content').dataset.view = 'saisons';
+
+  // Proposer de vider les séances archivées pour repartir sur une nouvelle saison
+  document.getElementById('modal-after-saison').classList.add('open');
+}
+
+function resetForNewSaison() {
+  state.archives = [];
+  state.rotations = [];
+  state.scores = {};
+  saveState();
+  closeModal('modal-after-saison');
+  document.getElementById('archives-content').dataset.view = 'seances';
+  renderArchives(); renderRotations(); renderScores(); renderClassement();
+  toast('Nouvelle saison prête ✓');
+}
+
+function deleteSaison(id) {
+  if (!confirm('Supprimer cette saison ?')) return;
+  state.saisons = (state.saisons||[]).filter(s => s.id !== id);
+  saveState(); renderArchives(); toast('Saison supprimée');
+}
+
+// Calcule les stats cumulées d'une liste d'archives
+function computeCumulStats(archives) {
+  const stats = {}; // nom => {nom, sexe, V,E,D,pM,pE,seances,matchs}
+
+  (archives||[]).forEach(arc => {
+    // S'assurer que tous les joueurs de l'archive sont dans stats
+    (arc.joueurs||[]).forEach(j => {
+      if (!stats[j.nom]) stats[j.nom] = { nom:j.nom, sexe:j.sexe, V:0,E:0,D:0,pM:0,pE:0,seances:0,matchs:0 };
+    });
+
+    // Compter la participation à la séance
+    const joueursDansSeance = new Set();
+    (arc.rotations||[]).forEach(rot => {
+      rot.terrains.forEach((m, ti) => {
+        const sc = arc.scores[`${rot.num}-${ti+1}`];
+        [...m.eqA,...m.eqB].forEach(j => joueursDansSeance.add(j.nom));
+        if (!sc||sc.a===''||sc.b==='') return;
+        const a=parseInt(sc.a), b=parseInt(sc.b);
+        m.eqA.forEach(j => {
+          if (!stats[j.nom]) stats[j.nom]={nom:j.nom,sexe:j.sexe,V:0,E:0,D:0,pM:0,pE:0,seances:0,matchs:0};
+          stats[j.nom].pM+=a; stats[j.nom].pE+=b; stats[j.nom].matchs++;
+          if(a>b)stats[j.nom].V++; else if(a===b)stats[j.nom].E++; else stats[j.nom].D++;
+        });
+        m.eqB.forEach(j => {
+          if (!stats[j.nom]) stats[j.nom]={nom:j.nom,sexe:j.sexe,V:0,E:0,D:0,pM:0,pE:0,seances:0,matchs:0};
+          stats[j.nom].pM+=b; stats[j.nom].pE+=a; stats[j.nom].matchs++;
+          if(b>a)stats[j.nom].V++; else if(a===b)stats[j.nom].E++; else stats[j.nom].D++;
+        });
+      });
+    });
+    joueursDansSeance.forEach(nom => { if(stats[nom]) stats[nom].seances++; });
+  });
+
+  return Object.values(stats).sort((a,b) => {
+    const sA=a.V*3+a.E, sB=b.V*3+b.E;
+    if(sB!==sA) return sB-sA;
+    return (b.pM-b.pE)-(a.pM-a.pE);
+  });
+}
+
+function openSaisonDetail(id) {
+  const saison = (state.saisons||[]).find(s => s.id === id);
+  if (!saison) return;
+
+  const rows = computeCumulStats(saison.archives);
+  const medals = ['🥇','🥈','🥉'];
+  const dateStr = new Date(saison.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  const nbSeances = saison.archives.length;
+  const nbMatchs = saison.archives.reduce((t,a)=>t+(a.rotations||[]).reduce((r,rot)=>r+rot.terrains.length,0),0);
+
+  // Podium
+  const podium = rows.slice(0,3).map((s,i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+      <span style="font-size:1.3rem">${medals[i]}</span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:.92rem">${esc(s.nom)}</div>
+        <div style="font-size:.7rem;color:#aaa">${s.seances} séance${s.seances>1?'s':''} · ${s.matchs} matchs</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:800;font-size:1rem">${s.V*3+s.E} pts</div>
+        <div style="font-size:.7rem;color:#aaa">${s.V}V ${s.E}É ${s.D}D</div>
+      </div>
+    </div>`).join('');
+
+  // Tableau complet
+  const trs = rows.map((s,i) => {
+    const score=s.V*3+s.E, diff=s.pM-s.pE;
+    const dHtml=diff>0?`<span style="color:#16a34a">+${diff}</span>`:diff<0?`<span style="color:#ef4444">${diff}</span>`:'0';
+    return `<tr style="border-bottom:1px solid #f5f5f5">
+      <td style="padding:6px 8px;font-weight:600">${i<3?medals[i]:(i+1)+'.'} ${esc(s.nom)}</td>
+      <td style="padding:6px 4px;text-align:center;font-size:.75rem;color:#888">${s.seances}</td>
+      <td style="padding:6px 4px;text-align:center;font-size:.75rem;color:#888">${s.matchs}</td>
+      <td style="padding:6px 4px;text-align:center;color:#16a34a;font-weight:700">${s.V}</td>
+      <td style="padding:6px 4px;text-align:center;color:#f59e0b;font-weight:700">${s.E}</td>
+      <td style="padding:6px 4px;text-align:center;color:#ef4444;font-weight:700">${s.D}</td>
+      <td style="padding:6px 4px;text-align:center">${dHtml}</td>
+      <td style="padding:6px 4px;text-align:center;font-weight:800">${score}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('saison-detail-title').textContent = saison.nom;
+  document.getElementById('saison-detail-body').innerHTML = `
+    <div style="font-size:.7rem;color:#aaa;margin-bottom:14px">📅 Clôturée le ${dateStr} · ${nbSeances} séance${nbSeances>1?'s':''} · ${nbMatchs} matchs joués</div>
+    <div style="margin-bottom:16px">${podium}</div>
+    <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#aaa;margin-bottom:8px">Classement complet</div>
+    <div style="overflow-x:auto;border-radius:10px;border:1px solid #f0f0f0">
+      <table style="width:100%;border-collapse:collapse;min-width:340px;font-size:.78rem">
+        <thead style="background:#f8f8fa">
+          <tr>
+            <th style="padding:7px 8px;text-align:left;font-size:.6rem;color:#aaa;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Joueur</th>
+            <th style="padding:7px 4px;text-align:center;font-size:.6rem;color:#aaa;font-weight:700" title="Séances">Séan.</th>
+            <th style="padding:7px 4px;text-align:center;font-size:.6rem;color:#aaa;font-weight:700" title="Matchs">Mat.</th>
+            <th style="padding:7px 4px;text-align:center;font-size:.6rem;color:#16a34a;font-weight:700">V</th>
+            <th style="padding:7px 4px;text-align:center;font-size:.6rem;color:#f59e0b;font-weight:700">É</th>
+            <th style="padding:7px 4px;text-align:center;font-size:.6rem;color:#ef4444;font-weight:700">D</th>
+            <th style="padding:7px 4px;text-align:center;font-size:.6rem;color:#aaa;font-weight:700">Diff</th>
+            <th style="padding:7px 4px;text-align:center;font-size:.6rem;color:#aaa;font-weight:700">Score</th>
+          </tr>
+        </thead>
+        <tbody>${trs}</tbody>
+      </table>
+    </div>
+    <p style="margin-top:10px;font-size:.62rem;color:#bbb">Score : V×3 + É×1 · Tri : Score puis Différentiel</p>
+  `;
+  openModal('modal-saison-detail');
+}
+
+/* ================================================================
+   HELPERS
+   ================================================================ */
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeModalIfBg(e){if(e.target===e.currentTarget)closeModal(e.currentTarget.id);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function renderAll(){renderJoueurs();renderRotations();renderScores();renderClassement();renderArchives();}
+
+/* ── INIT ── */
+loadState();
+document.getElementById('param-terrains').value=state.params.terrains||5;
+document.getElementById('param-rotations').value=state.params.rotations||10;
+
+// ── LOGIN ──
+const PWD_KEY   = 'badminton_pwd';    // mot de passe haché stocké
+const TOKEN_KEY = 'badminton_token';  // session token
+
+// Hash simple (pas cryptographique, mais suffisant pour usage local)
+async function hashStr(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function isLoggedIn() {
+  return sessionStorage.getItem(TOKEN_KEY) === 'ok';
+}
+
+async function initAuth() {
+  const storedPwd = localStorage.getItem(PWD_KEY);
+  const hint = document.getElementById('login-setup-hint');
+
+  if (!storedPwd) {
+    hint.innerHTML = `Première connexion ? <button class="link-btn" onclick="openSetupPwd()">Définir un mot de passe</button>`;
+  } else {
+    hint.innerHTML = `Mot de passe oublié ? <button class="link-btn" onclick="openSetupPwd()">Réinitialiser</button>`;
+  }
+
+  if (isLoggedIn()) {
+    showApp();
+  } else {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  document.getElementById('login-screen').classList.add('visible');
+  document.getElementById('app').style.display = 'none';
+  setTimeout(() => document.getElementById('login-pwd').focus(), 300);
+}
+
+function showApp() {
+  document.getElementById('login-screen').classList.remove('visible');
+  document.getElementById('app').style.display = 'flex';
+  renderAll();
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('login-pwd').value;
+  const errEl = document.getElementById('login-err');
+  const storedPwd = localStorage.getItem(PWD_KEY);
+
+  if (!pwd) { errEl.textContent = 'Veuillez saisir un mot de passe.'; return; }
+
+  // Pas encore de mot de passe défini → connexion directe et demande de créer un MDP
+  if (!storedPwd) {
+    errEl.textContent = '';
+    if (confirm('Aucun mot de passe défini. Voulez-vous utiliser "' + pwd + '" comme mot de passe ?')) {
+      const hash = await hashStr(pwd);
+      localStorage.setItem(PWD_KEY, hash);
+      sessionStorage.setItem(TOKEN_KEY, 'ok');
+      document.getElementById('login-pwd').value = '';
+      showApp();
+    }
+    return;
+  }
+
+  const hash = await hashStr(pwd);
+  if (hash === storedPwd) {
+    errEl.textContent = '';
+    sessionStorage.setItem(TOKEN_KEY, 'ok');
+    document.getElementById('login-pwd').value = '';
+    showApp();
+  } else {
+    errEl.textContent = 'Mot de passe incorrect.';
+    document.getElementById('login-pwd').select();
+  }
+}
+
+function doLogout() {
+  if (!confirm('Se déconnecter ?')) return;
+  sessionStorage.removeItem(TOKEN_KEY);
+  document.getElementById('login-pwd').value = '';
+  document.getElementById('login-err').textContent = '';
+  showLogin();
+}
+
+function togglePwdVisibility() {
+  const inp = document.getElementById('login-pwd');
+  const btn = document.getElementById('eye-btn');
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+async function openSetupPwd() {
+  // Afficher le modal de configuration du MDP
+  document.getElementById('setup-pwd-err').textContent = '';
+  document.getElementById('setup-pwd-1').value = '';
+  document.getElementById('setup-pwd-2').value = '';
+  document.getElementById('setup-pwd-modal').classList.add('visible');
+  setTimeout(() => document.getElementById('setup-pwd-1').focus(), 200);
+}
+
+async function confirmSetupPwd() {
+  const p1 = document.getElementById('setup-pwd-1').value;
+  const p2 = document.getElementById('setup-pwd-2').value;
+  const err = document.getElementById('setup-pwd-err');
+  if (p1.length < 4) { err.textContent = 'Minimum 4 caractères.'; return; }
+  if (p1 !== p2) { err.textContent = 'Les mots de passe ne correspondent pas.'; return; }
+  const hash = await hashStr(p1);
+  localStorage.setItem(PWD_KEY, hash);
+  sessionStorage.removeItem(TOKEN_KEY);
+  document.getElementById('setup-pwd-modal').classList.remove('visible');
+  document.getElementById('login-err').textContent = '';
+  document.getElementById('login-pwd').value = '';
+  // Mettre à jour le hint
+  document.getElementById('login-setup-hint').innerHTML =
+    `Mot de passe oublié ? <button class="link-btn" onclick="openSetupPwd()">Réinitialiser</button>`;
+  showLogin();
+  // Petit feedback visuel
+  const errEl = document.getElementById('login-err');
+  errEl.style.color = '#16a34a';
+  errEl.textContent = 'Mot de passe enregistré ! Connectez-vous.';
+  setTimeout(() => { errEl.style.color = ''; errEl.textContent = ''; }, 3000);
+}
+
+// Démarrage
+initAuth();
+</script>
+</body>
+</html>
