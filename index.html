@@ -1568,29 +1568,44 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function renderAll(){renderJoueurs();renderRotations();renderScores();renderClassement();renderArchives();}
 
 /* ── INIT ── */
-loadState();
-document.getElementById('param-terrains').value=state.params.terrains||5;
-document.getElementById('param-rotations').value=state.params.rotations||10;
+// (loadState et renderAll appelés depuis showApp après login)
 
-// ── LOGIN ──
-const PWD_KEY   = 'badminton_pwd';    // mot de passe haché stocké
-const TOKEN_KEY = 'badminton_token';  // session token
+// ── LOGIN — mot de passe stocké dans Firebase ──
+const TOKEN_KEY = 'badminton_token';
+const PWD_DOC   = doc(db, 'club', 'config'); // document Firebase pour le MDP
 
-// Hash simple (pas cryptographique, mais suffisant pour usage local)
 async function hashStr(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
 function isLoggedIn() {
   return sessionStorage.getItem(TOKEN_KEY) === 'ok';
 }
 
-async function initAuth() {
-  const storedPwd = localStorage.getItem(PWD_KEY);
-  const hint = document.getElementById('login-setup-hint');
+// Récupérer le hash du MDP depuis Firebase
+async function getStoredHash() {
+  try {
+    const snap = await getDoc(PWD_DOC);
+    if (snap.exists() && snap.data().pwdHash) return snap.data().pwdHash;
+  } catch(e) {}
+  // Fallback localStorage si Firebase indispo
+  return localStorage.getItem('badminton_pwd') || null;
+}
 
-  if (!storedPwd) {
+// Sauvegarder le hash dans Firebase + localStorage
+async function setStoredHash(hash) {
+  try {
+    await setDoc(PWD_DOC, { pwdHash: hash }, { merge: true });
+  } catch(e) {}
+  localStorage.setItem('badminton_pwd', hash);
+}
+
+async function initAuth() {
+  const hint = document.getElementById('login-setup-hint');
+  const storedHash = await getStoredHash();
+
+  if (!storedHash) {
     hint.innerHTML = `Première connexion ? <button class="link-btn" onclick="openSetupPwd()">Définir un mot de passe</button>`;
   } else {
     hint.innerHTML = `Mot de passe oublié ? <button class="link-btn" onclick="openSetupPwd()">Réinitialiser</button>`;
@@ -1622,29 +1637,24 @@ async function showApp() {
 async function doLogin() {
   const pwd = document.getElementById('login-pwd').value;
   const errEl = document.getElementById('login-err');
-  const storedPwd = localStorage.getItem(PWD_KEY);
-
   if (!pwd) { errEl.textContent = 'Veuillez saisir un mot de passe.'; return; }
 
-  // Pas encore de mot de passe défini → connexion directe et demande de créer un MDP
-  if (!storedPwd) {
+  errEl.textContent = 'Vérification…';
+  const storedHash = await getStoredHash();
+
+  // Aucun MDP défini → premier utilisateur crée le MDP
+  if (!storedHash) {
     errEl.textContent = '';
-    if (confirm('Aucun mot de passe défini. Voulez-vous utiliser "' + pwd + '" comme mot de passe ?')) {
-      const hash = await hashStr(pwd);
-      localStorage.setItem(PWD_KEY, hash);
-      sessionStorage.setItem(TOKEN_KEY, 'ok');
-      document.getElementById('login-pwd').value = '';
-      showApp();
-    }
+    openSetupPwd();
     return;
   }
 
   const hash = await hashStr(pwd);
-  if (hash === storedPwd) {
+  if (hash === storedHash) {
     errEl.textContent = '';
     sessionStorage.setItem(TOKEN_KEY, 'ok');
     document.getElementById('login-pwd').value = '';
-    showApp();
+    await showApp();
   } else {
     errEl.textContent = 'Mot de passe incorrect.';
     document.getElementById('login-pwd').select();
@@ -1666,8 +1676,7 @@ function togglePwdVisibility() {
   else { inp.type = 'password'; btn.textContent = '👁'; }
 }
 
-async function openSetupPwd() {
-  // Afficher le modal de configuration du MDP
+function openSetupPwd() {
   document.getElementById('setup-pwd-err').textContent = '';
   document.getElementById('setup-pwd-1').value = '';
   document.getElementById('setup-pwd-2').value = '';
@@ -1676,22 +1685,25 @@ async function openSetupPwd() {
 }
 
 async function confirmSetupPwd() {
-  const p1 = document.getElementById('setup-pwd-1').value;
-  const p2 = document.getElementById('setup-pwd-2').value;
+  const p1  = document.getElementById('setup-pwd-1').value;
+  const p2  = document.getElementById('setup-pwd-2').value;
   const err = document.getElementById('setup-pwd-err');
   if (p1.length < 4) { err.textContent = 'Minimum 4 caractères.'; return; }
-  if (p1 !== p2) { err.textContent = 'Les mots de passe ne correspondent pas.'; return; }
+  if (p1 !== p2)     { err.textContent = 'Les mots de passe ne correspondent pas.'; return; }
+
+  err.textContent = 'Enregistrement…';
   const hash = await hashStr(p1);
-  localStorage.setItem(PWD_KEY, hash);
+  await setStoredHash(hash);
+
   sessionStorage.removeItem(TOKEN_KEY);
   document.getElementById('setup-pwd-modal').classList.remove('visible');
-  document.getElementById('login-err').textContent = '';
   document.getElementById('login-pwd').value = '';
+
   // Mettre à jour le hint
   document.getElementById('login-setup-hint').innerHTML =
     `Mot de passe oublié ? <button class="link-btn" onclick="openSetupPwd()">Réinitialiser</button>`;
+
   showLogin();
-  // Petit feedback visuel
   const errEl = document.getElementById('login-err');
   errEl.style.color = '#16a34a';
   errEl.textContent = 'Mot de passe enregistré ! Connectez-vous.';
