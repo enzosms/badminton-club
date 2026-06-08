@@ -1569,7 +1569,6 @@ function renderAll(){renderJoueurs();renderRotations();renderScores();renderClas
 
 // ── LOGIN — mot de passe stocké dans Firebase ──
 const TOKEN_KEY = 'badminton_token';
-const PWD_DOC   = doc(db, 'club', 'config'); // document Firebase pour le MDP
 
 async function hashStr(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
