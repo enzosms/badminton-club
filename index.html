@@ -611,6 +611,7 @@ td.col-score { font-weight: 800; }
 
 <div id="toast"></div>
 
+<!-- v3.0 - Firebase compat - no module -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
@@ -1704,10 +1705,10 @@ async function confirmSetupPwd() {
   setTimeout(() => { errEl.style.color = ''; errEl.textContent = ''; }, 3000);
 }
 
-// ── Service Worker (PWA offline) ──
+// ── Service Worker désactivé pour éviter les problèmes de cache ──
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
   });
 }
 
