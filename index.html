@@ -3,8 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<!-- ═══ PWA ═══ -->
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#f4f4f6">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Badminton">
+<meta name="application-name" content="Badminton">
+<meta name="theme-color" content="#ffffff">
+
+<!-- Icône Apple (home screen iOS) -->
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<!-- Splash screen couleur iOS -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Badminton</title>
 <style>
 /* ── RESET ── */
@@ -370,6 +383,7 @@ td.col-score { font-weight: 800; }
   <header>
     <h1>🏸 Badminton</h1>
     <div class="hdr-actions">
+      <span id="sync-status" style="font-size:.7rem;font-weight:600;color:#aaa;align-self:center">● Sync</span>
       <button class="hdr-btn" onclick="exportJSON()">↑ Export</button>
       <button class="hdr-btn" onclick="document.getElementById('fi').click()">↓ Import</button>
       <input type="file" id="fi" accept=".json" class="hidden" onchange="importJSON(event)">
@@ -597,24 +611,111 @@ td.col-score { font-weight: 800; }
 
 <div id="toast"></div>
 
-<script>
+<script type="module">
 /* ================================================================
-   ÉTAT & PERSISTANCE
+   FIREBASE — synchronisation temps réel
+   ================================================================ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot, getDoc }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA8Bf-vfX2V2NOreRICOGRgPaKHJzxFeVE",
+  authDomain: "badminton-club-entrainement.firebaseapp.com",
+  projectId: "badminton-club-entrainement",
+  storageBucket: "badminton-club-entrainement.firebasestorage.app",
+  messagingSenderId: "542519905749",
+  appId: "1:542519905749:web:6cc752336cf6e70e07015c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const DOC = doc(db, 'club', 'data'); // un seul document partagé
+
+/* ── Indicateur de sync ── */
+function setSyncStatus(status) {
+  // status: 'ok' | 'saving' | 'offline'
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const cfg = {
+    ok:      { text:'● Sync', color:'#16a34a' },
+    saving:  { text:'↑ Sync…', color:'#f59e0b' },
+    offline: { text:'○ Hors ligne', color:'#ef4444' }
+  };
+  el.textContent = cfg[status].text;
+  el.style.color  = cfg[status].color;
+}
+
+/* ── Sauvegarde vers Firestore ── */
+let saveTimer = null;
+async function saveState() {
+  // Toujours sauvegarder en local comme fallback
+  localStorage.setItem('badminton_club_v2', JSON.stringify(state));
+  setSyncStatus('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await setDoc(DOC, { payload: JSON.stringify(state) });
+      setSyncStatus('ok');
+    } catch(e) {
+      console.warn('Firebase save error:', e);
+      setSyncStatus('offline');
+    }
+  }, 600); // debounce 600ms pour éviter trop d'écritures
+}
+
+/* ── Chargement initial ── */
+async function loadState() {
+  try {
+    const snap = await getDoc(DOC);
+    if (snap.exists()) {
+      const remote = JSON.parse(snap.data().payload);
+      state = { ...state, ...remote };
+      localStorage.setItem('badminton_club_v2', JSON.stringify(state));
+    } else {
+      // Pas encore de données sur Firebase → charger depuis localStorage
+      const raw = localStorage.getItem('badminton_club_v2');
+      if (raw) { try { state = { ...state, ...JSON.parse(raw) }; } catch(e){} }
+    }
+    setSyncStatus('ok');
+  } catch(e) {
+    console.warn('Firebase load error, using localStorage:', e);
+    const raw = localStorage.getItem('badminton_club_v2');
+    if (raw) { try { state = { ...state, ...JSON.parse(raw) }; } catch(e2){} }
+    setSyncStatus('offline');
+  }
+}
+
+/* ── Écoute temps réel : mise à jour automatique sur tous les appareils ── */
+let isLocalUpdate = false;
+function startRealtimeSync() {
+  onSnapshot(DOC, (snap) => {
+    if (!snap.exists()) return;
+    if (isLocalUpdate) { isLocalUpdate = false; return; }
+    try {
+      const remote = JSON.parse(snap.data().payload);
+      state = { ...state, ...remote };
+      localStorage.setItem('badminton_club_v2', JSON.stringify(state));
+      renderAll();
+      setSyncStatus('ok');
+    } catch(e) { console.warn('Snapshot parse error:', e); }
+  }, (err) => {
+    console.warn('Snapshot error:', err);
+    setSyncStatus('offline');
+  });
+}
+
+/* ================================================================
+   ÉTAT GLOBAL
    ================================================================ */
 let state = {
   joueurs: [],
   params: { terrains: 5, rotations: 10 },
   rotations: [],
   scores: {},
-  archives: [],   // [{id, nom, date, rotations, scores, joueurs, params}]
-  saisons: []     // [{id, nom, annee, date, archives:[...copies]}]
+  archives: [],
+  saisons: []
 };
-
-function saveState() { localStorage.setItem('badminton_club_v2', JSON.stringify(state)); }
-function loadState() {
-  const raw = localStorage.getItem('badminton_club_v2');
-  if (raw) { try { state = { ...state, ...JSON.parse(raw) }; } catch(e){} }
-}
 function exportJSON() {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type:'application/json' }));
@@ -1496,7 +1597,7 @@ async function initAuth() {
   }
 
   if (isLoggedIn()) {
-    showApp();
+    await showApp();
   } else {
     showLogin();
   }
@@ -1508,10 +1609,14 @@ function showLogin() {
   setTimeout(() => document.getElementById('login-pwd').focus(), 300);
 }
 
-function showApp() {
+async function showApp() {
   document.getElementById('login-screen').classList.remove('visible');
   document.getElementById('app').style.display = 'flex';
+  await loadState();
+  document.getElementById('param-terrains').value = state.params.terrains || 5;
+  document.getElementById('param-rotations').value = state.params.rotations || 10;
   renderAll();
+  startRealtimeSync();
 }
 
 async function doLogin() {
@@ -1593,8 +1698,18 @@ async function confirmSetupPwd() {
   setTimeout(() => { errEl.style.color = ''; errEl.textContent = ''; }, 3000);
 }
 
+// ── Service Worker (PWA offline) ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
 // Démarrage
-initAuth();
+async function boot() {
+  await initAuth();
+}
+boot();
 </script>
 </body>
 </html>
