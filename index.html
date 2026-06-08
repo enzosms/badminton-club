@@ -850,9 +850,21 @@ function generateRotations() {
     const femmes = sorted.filter(j=>j.sexe==='H'?false:true);
     let tMatches = [];
 
-    if (ladiesRound && femmes.filter(f=>!benched.includes(f)).length >= 4) {
-      const avF = femmes.filter(f=>!benched.includes(f)).slice(0,4);
-      tMatches.push(buildMatch(avF[0],avF[1],avF[2],avF[3],'Double Dames',pairHist,duelHist));
+    // Rotations paires : maximiser les terrains Double Dames
+    if (ladiesRound) {
+      const avF = femmes.filter(f => !benched.includes(f));
+      // Nombre max de terrains Double Dames possibles (groupes de 4 femmes)
+      const nbLadiesTerrains = Math.min(Math.floor(avF.length / 4), terrains);
+      // Trier les femmes par moins de matchs joués
+      const fSorted = avF.slice().sort((a,b) =>
+        (matchCount[a.id]+benchCount[a.id]*.1) - (matchCount[b.id]+benchCount[b.id]*.1)
+      );
+      for (let lt = 0; lt < nbLadiesTerrains; lt++) {
+        const pick = fSorted.slice(lt*4, lt*4+4);
+        if (pick.length === 4) {
+          tMatches.push(buildMatch(pick[0],pick[1],pick[2],pick[3],'Double Dames',pairHist,duelHist));
+        }
+      }
     }
     const used = tMatches.flatMap(m=>[...m.eqA,...m.eqB]);
     const pool = sorted.filter(p=>!used.includes(p)&&!benched.includes(p));
