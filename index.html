@@ -1705,6 +1705,29 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ── Exposition globale des fonctions (requis avec type="module") ──
+Object.assign(window, {
+  // Navigation
+  switchTab, exportJSON, importJSON,
+  // Joueurs
+  openAddPlayer, openEditPlayer, selectSex, savePlayer, deletePlayer,
+  // Paramètres & rotations
+  stepParam, saveParams, generateRotations, clearRotations,
+  // Scores
+  updateScore,
+  // Archives
+  openArchiveModal, confirmArchive, resetForNewSession,
+  openArchiveDetail, restoreArchive, deleteArchive,
+  setArchiveView,
+  // Saisons
+  openSaisonModal, confirmSaison, resetForNewSaison,
+  openSaisonDetail, deleteSaison,
+  // Modals
+  openModal, closeModal, closeModalIfBg,
+  // Login
+  doLogin, doLogout, togglePwdVisibility, openSetupPwd, confirmSetupPwd,
+});
+
 // Démarrage
 async function boot() {
   await initAuth();
