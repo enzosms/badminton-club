@@ -611,14 +611,12 @@ td.col-score { font-weight: 800; }
 
 <div id="toast"></div>
 
-<script type="module">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
 /* ================================================================
    FIREBASE — synchronisation temps réel
    ================================================================ */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot, getDoc }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyA8Bf-vfX2V2NOreRICOGRgPaKHJzxFeVE",
   authDomain: "badminton-club-entrainement.firebaseapp.com",
@@ -628,9 +626,10 @@ const firebaseConfig = {
   appId: "1:542519905749:web:6cc752336cf6e70e07015c"
 };
 
-const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
-const DOC = doc(db, 'club', 'data'); // un seul document partagé
+firebase.initializeApp(firebaseConfig);
+const db  = firebase.firestore();
+const DOC = db.collection('club').doc('data');
+const PWD_DOC = db.collection('club').doc('config');
 
 /* ── Indicateur de sync ── */
 function setSyncStatus(status) {
@@ -649,31 +648,29 @@ function setSyncStatus(status) {
 /* ── Sauvegarde vers Firestore ── */
 let saveTimer = null;
 async function saveState() {
-  // Toujours sauvegarder en local comme fallback
   localStorage.setItem('badminton_club_v2', JSON.stringify(state));
   setSyncStatus('saving');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
-      await setDoc(DOC, { payload: JSON.stringify(state) });
+      await DOC.set({ payload: JSON.stringify(state) });
       setSyncStatus('ok');
     } catch(e) {
       console.warn('Firebase save error:', e);
       setSyncStatus('offline');
     }
-  }, 600); // debounce 600ms pour éviter trop d'écritures
+  }, 600);
 }
 
 /* ── Chargement initial ── */
 async function loadState() {
   try {
-    const snap = await getDoc(DOC);
-    if (snap.exists()) {
+    const snap = await DOC.get();
+    if (snap.exists) {
       const remote = JSON.parse(snap.data().payload);
       state = { ...state, ...remote };
       localStorage.setItem('badminton_club_v2', JSON.stringify(state));
     } else {
-      // Pas encore de données sur Firebase → charger depuis localStorage
       const raw = localStorage.getItem('badminton_club_v2');
       if (raw) { try { state = { ...state, ...JSON.parse(raw) }; } catch(e){} }
     }
@@ -689,8 +686,8 @@ async function loadState() {
 /* ── Écoute temps réel : mise à jour automatique sur tous les appareils ── */
 let isLocalUpdate = false;
 function startRealtimeSync() {
-  onSnapshot(DOC, (snap) => {
-    if (!snap.exists()) return;
+  DOC.onSnapshot((snap) => {
+    if (!snap.exists) return;
     if (isLocalUpdate) { isLocalUpdate = false; return; }
     try {
       const remote = JSON.parse(snap.data().payload);
@@ -1586,17 +1583,15 @@ function isLoggedIn() {
 // Récupérer le hash du MDP depuis Firebase
 async function getStoredHash() {
   try {
-    const snap = await getDoc(PWD_DOC);
-    if (snap.exists() && snap.data().pwdHash) return snap.data().pwdHash;
+    const snap = await PWD_DOC.get();
+    if (snap.exists && snap.data().pwdHash) return snap.data().pwdHash;
   } catch(e) {}
-  // Fallback localStorage si Firebase indispo
   return localStorage.getItem('badminton_pwd') || null;
 }
 
-// Sauvegarder le hash dans Firebase + localStorage
 async function setStoredHash(hash) {
   try {
-    await setDoc(PWD_DOC, { pwdHash: hash }, { merge: true });
+    await PWD_DOC.set({ pwdHash: hash }, { merge: true });
   } catch(e) {}
   localStorage.setItem('badminton_pwd', hash);
 }
@@ -1716,49 +1711,6 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
-
-// ── Exposition globale des fonctions (requis avec type="module") ──
-// Navigation
-window.switchTab            = switchTab;
-window.exportJSON           = exportJSON;
-window.importJSON           = importJSON;
-// Joueurs
-window.openAddPlayer        = openAddPlayer;
-window.openEditPlayer       = openEditPlayer;
-window.selectSex            = selectSex;
-window.savePlayer           = savePlayer;
-window.deletePlayer         = deletePlayer;
-// Paramètres & rotations
-window.stepParam            = stepParam;
-window.saveParams           = saveParams;
-window.generateRotations    = generateRotations;
-window.clearRotations       = clearRotations;
-// Scores
-window.updateScore          = updateScore;
-// Archives
-window.openArchiveModal     = openArchiveModal;
-window.confirmArchive       = confirmArchive;
-window.resetForNewSession   = resetForNewSession;
-window.openArchiveDetail    = openArchiveDetail;
-window.restoreArchive       = restoreArchive;
-window.deleteArchive        = deleteArchive;
-window.setArchiveView       = setArchiveView;
-// Saisons
-window.openSaisonModal      = openSaisonModal;
-window.confirmSaison        = confirmSaison;
-window.resetForNewSaison    = resetForNewSaison;
-window.openSaisonDetail     = openSaisonDetail;
-window.deleteSaison         = deleteSaison;
-// Modals
-window.openModal            = openModal;
-window.closeModal           = closeModal;
-window.closeModalIfBg       = closeModalIfBg;
-// Login
-window.doLogin              = doLogin;
-window.doLogout             = doLogout;
-window.togglePwdVisibility  = togglePwdVisibility;
-window.openSetupPwd         = openSetupPwd;
-window.confirmSetupPwd      = confirmSetupPwd;
 
 // Démarrage
 async function boot() {
