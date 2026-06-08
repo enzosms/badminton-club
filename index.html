@@ -1718,27 +1718,47 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── Exposition globale des fonctions (requis avec type="module") ──
-Object.assign(window, {
-  // Navigation
-  switchTab, exportJSON, importJSON,
-  // Joueurs
-  openAddPlayer, openEditPlayer, selectSex, savePlayer, deletePlayer,
-  // Paramètres & rotations
-  stepParam, saveParams, generateRotations, clearRotations,
-  // Scores
-  updateScore,
-  // Archives
-  openArchiveModal, confirmArchive, resetForNewSession,
-  openArchiveDetail, restoreArchive, deleteArchive,
-  setArchiveView,
-  // Saisons
-  openSaisonModal, confirmSaison, resetForNewSaison,
-  openSaisonDetail, deleteSaison,
-  // Modals
-  openModal, closeModal, closeModalIfBg,
-  // Login
-  doLogin, doLogout, togglePwdVisibility, openSetupPwd, confirmSetupPwd,
-});
+// Navigation
+window.switchTab            = switchTab;
+window.exportJSON           = exportJSON;
+window.importJSON           = importJSON;
+// Joueurs
+window.openAddPlayer        = openAddPlayer;
+window.openEditPlayer       = openEditPlayer;
+window.selectSex            = selectSex;
+window.savePlayer           = savePlayer;
+window.deletePlayer         = deletePlayer;
+// Paramètres & rotations
+window.stepParam            = stepParam;
+window.saveParams           = saveParams;
+window.generateRotations    = generateRotations;
+window.clearRotations       = clearRotations;
+// Scores
+window.updateScore          = updateScore;
+// Archives
+window.openArchiveModal     = openArchiveModal;
+window.confirmArchive       = confirmArchive;
+window.resetForNewSession   = resetForNewSession;
+window.openArchiveDetail    = openArchiveDetail;
+window.restoreArchive       = restoreArchive;
+window.deleteArchive        = deleteArchive;
+window.setArchiveView       = setArchiveView;
+// Saisons
+window.openSaisonModal      = openSaisonModal;
+window.confirmSaison        = confirmSaison;
+window.resetForNewSaison    = resetForNewSaison;
+window.openSaisonDetail     = openSaisonDetail;
+window.deleteSaison         = deleteSaison;
+// Modals
+window.openModal            = openModal;
+window.closeModal           = closeModal;
+window.closeModalIfBg       = closeModalIfBg;
+// Login
+window.doLogin              = doLogin;
+window.doLogout             = doLogout;
+window.togglePwdVisibility  = togglePwdVisibility;
+window.openSetupPwd         = openSetupPwd;
+window.confirmSetupPwd      = confirmSetupPwd;
 
 // Démarrage
 async function boot() {
