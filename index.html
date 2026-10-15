@@ -79,7 +79,7 @@ nav {
 .card-title { font-size: .95rem; font-weight: 700; margin-bottom: 12px; color: #111; }
 
 /* ── STATS ── */
-.stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+.stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 14px; }
 .stat-card {
   background: #fff; border-radius: 14px; padding: 14px 10px; text-align: center;
   box-shadow: 0 1px 4px rgba(0,0,0,.06);
@@ -326,6 +326,25 @@ td.col-score { font-weight: 800; }
 .archive-meta { font-size: .7rem; color: #aaa; margin-top: 2px; }
 .archive-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
+/* ── PRÉSENCE ── */
+.presence-toggle {
+  width: 36px; height: 36px; border-radius: 50%; border: 2px solid #e0e0e0;
+  background: #f7f7f9; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; font-size: 1rem; flex-shrink: 0;
+  transition: all .15s; user-select: none;
+}
+.presence-toggle.present { background: #f0fdf4; border-color: #16a34a; }
+.presence-toggle.absent  { background: #f7f7f9; border-color: #e0e0e0; color: #ccc; }
+.player-row.absent { opacity: .45; }
+.stat-card.present-stat .stat-val { color: #16a34a; }
+.btn-presence-all {
+  flex: 1; padding: 8px; border: 1.5px solid #e0e0e0; border-radius: 8px;
+  background: #f7f7f9; font-size: .78rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: background .12s; color: #555;
+}
+.btn-presence-all:active { background: #ebebeb; }
+.btn-presence-all.all-in { background: #f0fdf4; border-color: #16a34a; color: #16a34a; }
+
 .hidden { display: none !important; }
 .mt10 { margin-top: 10px; }
 </style>
@@ -398,6 +417,8 @@ td.col-score { font-weight: 800; }
       <div class="stats-row" id="stats-joueurs"></div>
       <div class="card">
         <div class="card-title">Liste des joueurs</div>
+        <!-- Barre présence -->
+        <div id="presence-bar" style="display:none;gap:8px;margin-bottom:12px;"></div>
         <div id="player-list"></div>
         <button class="btn btn-dark btn-full mt10" onclick="openAddPlayer()">+ Ajouter un joueur</button>
       </div>
@@ -435,6 +456,7 @@ td.col-score { font-weight: 800; }
 
     <!-- ── CLASSEMENT ── -->
     <div id="screen-classement" class="screen">
+      <button class="btn btn-dark btn-full" style="margin-bottom:12px" onclick="openArchiveModal()">+ Archiver la séance actuelle</button>
       <div id="classement-content"></div>
     </div>
 
@@ -476,12 +498,12 @@ td.col-score { font-weight: 800; }
           <rect x="8" y="18" width="8" height="2" rx=".5"/>
           <rect x="7" y="20" width="10" height="2" rx=".5"/>
         </svg>
-      </span>Classement
+      </span>Séance
     </button>
+
     <button class="tab-btn" data-tab="archives" onclick="switchTab('archives')">
       <span class="ico">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-          <!-- 3 classeurs -->
           <rect x="3" y="2" width="5" height="18" rx="1"/>
           <line x1="4.5" y1="5" x2="6.5" y2="5"/>
           <line x1="4.5" y1="7.5" x2="6.5" y2="7.5"/>
@@ -500,7 +522,7 @@ td.col-score { font-weight: 800; }
             <circle cx="18.5" cy="17" r="1"/>
           </g>
         </svg>
-      </span>Archives
+      </span>Saison
     </button>
   </nav>
 </div>
@@ -543,21 +565,6 @@ td.col-score { font-weight: 800; }
   </div>
 </div>
 
-<!-- MODAL APRÈS ARCHIVAGE SAISON -->
-<div class="modal-overlay" id="modal-after-saison">
-  <div class="modal" style="text-align:center">
-    <div style="font-size:2rem;margin-bottom:8px">📅</div>
-    <div class="modal-title" style="text-align:center">Saison archivée !</div>
-    <p style="font-size:.85rem;color:#666;margin-bottom:22px;line-height:1.6">
-      Voulez-vous remettre à zéro les séances, rotations et scores pour démarrer une nouvelle saison ?<br>
-      <span style="font-size:.75rem;color:#aaa">(La liste de joueurs est conservée)</span>
-    </p>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-dark btn-full" onclick="resetForNewSaison()">🔄 Nouvelle saison</button>
-      <button class="btn btn-full" onclick="closeModal('modal-after-saison');toast('Saison archivée ✓')">Garder les données actuelles</button>
-    </div>
-  </div>
-</div>
 
 <!-- MODAL DÉTAIL SAISON -->
 <div class="modal-overlay" id="modal-saison-detail" onclick="closeModalIfBg(event)">
@@ -568,21 +575,6 @@ td.col-score { font-weight: 800; }
   </div>
 </div>
 
-<!-- MODAL APRÈS ARCHIVAGE SÉANCE -->
-<div class="modal-overlay" id="modal-after-archive">
-  <div class="modal" style="text-align:center">
-    <div style="font-size:2rem;margin-bottom:8px">📦</div>
-    <div class="modal-title" style="text-align:center">Séance archivée !</div>
-    <p style="font-size:.85rem;color:#666;margin-bottom:22px;line-height:1.6">
-      Voulez-vous remettre les rotations et scores à zéro<br>pour démarrer une nouvelle séance ?<br>
-      <span style="font-size:.75rem;color:#aaa">(La liste de joueurs est conservée)</span>
-    </p>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-dark btn-full" onclick="resetForNewSession()">🔄 Nouvelle séance</button>
-      <button class="btn btn-full" onclick="closeModal('modal-after-archive');toast('Séance archivée ✓')">Garder les rotations actuelles</button>
-    </div>
-  </div>
-</div>
 
 <!-- MODAL ARCHIVE (nom de séance) -->
 <div class="modal-overlay" id="modal-archive" onclick="closeModalIfBg(event)">
@@ -778,7 +770,7 @@ function savePlayer() {
   const nom = document.getElementById('modal-name').value.trim();
   if (!nom) { toast('Prénom requis', true); return; }
   if (editId === null) {
-    state.joueurs.push({ id: Date.now(), nom, sexe: modalSex });
+    state.joueurs.push({ id: Date.now(), nom, sexe: modalSex, present: false });
   } else {
     const p = state.joueurs.find(j => j.id === editId);
     if (p) { p.nom = nom; p.sexe = modalSex; }
@@ -791,24 +783,68 @@ function deletePlayer(id) {
   saveState(); renderJoueurs();
 }
 
+function togglePresence(id) {
+  const p = state.joueurs.find(j => j.id === id); if (!p) return;
+  p.present = !p.present;
+  saveState(); renderJoueurs();
+}
+
+function setAllPresent(val) {
+  state.joueurs.forEach(j => j.present = val);
+  saveState(); renderJoueurs();
+}
+
+function getPresents() {
+  return state.joueurs.filter(j => j.present);
+}
+
 function renderJoueurs() {
   const total = state.joueurs.length;
-  const nbF = state.joueurs.filter(j => j.sexe==='F').length;
-  const nbH = total - nbF;
+  const nbF   = state.joueurs.filter(j => j.sexe==='F').length;
+  const nbH   = total - nbF;
+  const nbP   = getPresents().length;
+  const nbPF  = getPresents().filter(j => j.sexe==='F').length;
+  const nbPH  = nbP - nbPF;
+
+  // Stats : 3 cartes inscrites + 3 cartes présents
   document.getElementById('stats-joueurs').innerHTML = `
-    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Joueurs</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:#3b82f6">${nbH}</div><div class="stat-lbl">Hommes</div></div>
-    <div class="stat-card"><div class="stat-val" style="color:#ec4899">${nbF}</div><div class="stat-lbl">Femmes</div></div>
+    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Inscrits</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#3b82f6">${nbH}</div><div class="stat-lbl">H inscrits</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#ec4899">${nbF}</div><div class="stat-lbl">F inscrites</div></div>
+    <div class="stat-card present-stat"><div class="stat-val">${nbP}</div><div class="stat-lbl">Présents</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#3b82f6">${nbPH}</div><div class="stat-lbl">H présents</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:#ec4899">${nbPF}</div><div class="stat-lbl">F présentes</div></div>
   `;
+
+  // Barre présence (boutons Tous / Aucun)
+  const bar = document.getElementById('presence-bar');
+  if (total > 0) {
+    const allIn = nbP === total;
+    bar.style.display = 'flex';
+    bar.innerHTML = `
+      <button class="btn-presence-all${allIn?' all-in':''}" onclick="setAllPresent(true)">✓ Tous présents</button>
+      <button class="btn-presence-all" onclick="setAllPresent(false)">✕ Tous absents</button>
+    `;
+  } else {
+    bar.style.display = 'none';
+  }
+
   const list = document.getElementById('player-list');
   if (!state.joueurs.length) {
     list.innerHTML = `<div class="empty"><div class="empty-ico">👤</div><p>Aucun joueur.<br>Ajoutez des joueurs pour commencer.</p></div>`;
     return;
   }
-  list.innerHTML = state.joueurs.map(p => `
-    <div class="player-row">
+
+  // Triés : présents en haut, absents en bas
+  const sorted = [...state.joueurs].sort((a,b) => (b.present?1:0) - (a.present?1:0));
+
+  list.innerHTML = sorted.map(p => `
+    <div class="player-row${p.present?'':' absent'}">
+      <button class="presence-toggle ${p.present?'present':'absent'}" onclick="togglePresence(${p.id})" title="${p.present?'Marquer absent':'Marquer présent'}">
+        ${p.present?'✓':'○'}
+      </button>
       <span class="p-sex-badge ${p.sexe.toLowerCase()}">${p.sexe}</span>
-      <span class="p-name sexe-${p.sexe.toLowerCase()}">${esc(p.nom)}</span>
+      <span class="p-name">${esc(p.nom)}</span>
       <button class="btn btn-ghost btn-sm" onclick="openEditPlayer(${p.id})">✏</button>
       <button class="btn btn-ghost btn-sm" style="color:#ef4444" onclick="deletePlayer(${p.id})">✕</button>
     </div>
@@ -830,10 +866,11 @@ function stepParam(p, d) {
 }
 
 function generateRotations() {
-  if (state.joueurs.length < 4) { toast('Il faut au moins 4 joueurs', true); return; }
+  const presents = getPresents();
+  if (presents.length < 4) { toast('Il faut au moins 4 joueurs présents', true); return; }
   saveParams();
   const { terrains, rotations: nbRot } = state.params;
-  const joueurs = [...state.joueurs];
+  const joueurs = [...presents];
   const matchCount = {}, benchCount = {};
   joueurs.forEach(j => { matchCount[j.id]=0; benchCount[j.id]=0; });
   const pairHist = new Set(), duelHist = new Set();
@@ -1076,8 +1113,17 @@ function renderClassement(){
     cont.innerHTML=`<div class="empty"><div class="empty-ico">🏆</div><p>Aucun joueur enregistré.</p></div>`;
     return;
   }
+  // Uniquement les joueurs qui ont participé à au moins un match de la séance
+  const joueursActifs = new Set();
+  (state.rotations||[]).forEach(rot=>{
+    rot.terrains.forEach((m,ti)=>{
+      const sc=state.scores[`${rot.num}-${ti+1}`];
+      if(!sc||sc.a===''||sc.b==='') return;
+      [...m.eqA,...m.eqB].forEach(j=>joueursActifs.add(j.id));
+    });
+  });
   const stats={};
-  state.joueurs.forEach(j=>{stats[j.id]={j,V:0,E:0,D:0,pM:0,pE:0};});
+  state.joueurs.filter(j=>joueursActifs.has(j.id)).forEach(j=>{stats[j.id]={j,V:0,E:0,D:0,pM:0,pE:0};});
   (state.rotations||[]).forEach(rot=>{
     rot.terrains.forEach((m,ti)=>{
       const sc=state.scores[`${rot.num}-${ti+1}`];
@@ -1121,7 +1167,7 @@ function renderClassement(){
 
   cont.innerHTML=`
     <div class="card">
-      <div class="card-title">Classement général</div>
+      <div class="card-title">Classement séance</div>
       <div class="rank-wrap">
         <table class="rank">
           <thead><tr><th>Joueur</th><th>V</th><th>É</th><th>D</th><th>Pts+</th><th>Pts−</th><th>Diff</th><th>Score</th></tr></thead>
@@ -1165,12 +1211,17 @@ function confirmArchive() {
   };
 
   state.archives.unshift(archive);
+  // Remise à zéro automatique des rotations et scores pour la prochaine séance
+  state.rotations = [];
+  state.scores = {};
   saveState();
   closeModal('modal-archive');
   renderArchives();
-
-  // Proposer de remettre à zéro via un second modal dédié
-  document.getElementById('modal-after-archive').classList.add('open');
+  renderRotations();
+  renderScores();
+  renderClassement();
+  toast('Séance archivée ✓');
+  switchTab('rotations');
 }
 
 function resetForNewSession() {
@@ -1278,13 +1329,94 @@ function deleteArchive(id) {
   saveState(); renderArchives(); toast('Archive supprimée');
 }
 
+/* ── Classement cumulé de la saison en cours (toutes les séances archivées) ── */
+function renderSaisonEnCours() {
+  const archives = state.archives || [];
+  if (!archives.length) return '';
+
+  // Calculer les stats cumulées sur toutes les séances archivées de la saison
+  const stats = {};
+  archives.forEach(arc => {
+    (arc.joueurs||[]).forEach(j => {
+      if (!stats[j.nom]) stats[j.nom] = { nom:j.nom, sexe:j.sexe, V:0,E:0,D:0,pM:0,pE:0,seances:0,matchs:0 };
+    });
+    const joueursDansSeance = new Set();
+    (arc.rotations||[]).forEach(rot => {
+      rot.terrains.forEach((m, ti) => {
+        const sc = arc.scores[`${rot.num}-${ti+1}`];
+        [...m.eqA,...m.eqB].forEach(j => joueursDansSeance.add(j.nom));
+        if (!sc||sc.a===''||sc.b==='') return;
+        const a=parseInt(sc.a), b=parseInt(sc.b);
+        m.eqA.forEach(j => {
+          if (!stats[j.nom]) stats[j.nom]={nom:j.nom,sexe:j.sexe,V:0,E:0,D:0,pM:0,pE:0,seances:0,matchs:0};
+          stats[j.nom].pM+=a; stats[j.nom].pE+=b; stats[j.nom].matchs++;
+          if(a>b)stats[j.nom].V++; else if(a===b)stats[j.nom].E++; else stats[j.nom].D++;
+        });
+        m.eqB.forEach(j => {
+          if (!stats[j.nom]) stats[j.nom]={nom:j.nom,sexe:j.sexe,V:0,E:0,D:0,pM:0,pE:0,seances:0,matchs:0};
+          stats[j.nom].pM+=b; stats[j.nom].pE+=a; stats[j.nom].matchs++;
+          if(b>a)stats[j.nom].V++; else if(a===b)stats[j.nom].E++; else stats[j.nom].D++;
+        });
+      });
+    });
+    joueursDansSeance.forEach(nom => { if(stats[nom]) stats[nom].seances++; });
+  });
+
+  const rows = Object.values(stats).sort((a,b) => {
+    const sA=a.V*3+a.E, sB=b.V*3+b.E;
+    if(sB!==sA) return sB-sA;
+    return (b.pM-b.pE)-(a.pM-a.pE);
+  });
+
+  const medals = ['🥇','🥈','🥉'];
+  const nbSeances = archives.length;
+  const nbMatchs = archives.reduce((t,a)=>t+(a.rotations||[]).reduce((r,rot)=>r+rot.terrains.length,0),0);
+
+  const trs = rows.map((s,i) => {
+    const score=s.V*3+s.E, diff=s.pM-s.pE;
+    const dHtml=diff>0?`<span style="color:#16a34a;font-weight:700">+${diff}</span>`:diff<0?`<span style="color:#ef4444;font-weight:700">${diff}</span>`:'0';
+    return `<tr style="border-bottom:1px solid #f5f5f5">
+      <td style="padding:7px 8px;font-weight:600">${i<3?medals[i]:`<span style="color:#bbb;font-size:.75rem">${i+1}</span>`} ${esc(s.nom)}</td>
+      <td style="padding:7px 4px;text-align:center;font-size:.75rem;color:#888">${s.seances}</td>
+      <td style="padding:7px 4px;text-align:center;color:#16a34a;font-weight:700">${s.V}</td>
+      <td style="padding:7px 4px;text-align:center;color:#f59e0b;font-weight:700">${s.E}</td>
+      <td style="padding:7px 4px;text-align:center;color:#ef4444;font-weight:700">${s.D}</td>
+      <td style="padding:7px 4px;text-align:center;font-weight:800">${score}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+        Classement saison en cours
+        <span style="font-size:.7rem;color:#aaa;font-weight:400">${nbSeances} séance${nbSeances>1?'s':''} · ${nbMatchs} matchs</span>
+      </div>
+      <div style="overflow-x:auto;border-radius:10px;border:1px solid #f0f0f0">
+        <table style="width:100%;border-collapse:collapse;min-width:300px;font-size:.82rem">
+          <thead style="background:#f8f8fa">
+            <tr>
+              <th style="padding:6px 8px;text-align:left;font-size:.6rem;color:#aaa;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Joueur</th>
+              <th style="padding:6px 4px;text-align:center;font-size:.6rem;color:#aaa;font-weight:700" title="Séances jouées">Séan.</th>
+              <th style="padding:6px 4px;text-align:center;font-size:.6rem;color:#16a34a;font-weight:700">V</th>
+              <th style="padding:6px 4px;text-align:center;font-size:.6rem;color:#f59e0b;font-weight:700">É</th>
+              <th style="padding:6px 4px;text-align:center;font-size:.6rem;color:#ef4444;font-weight:700">D</th>
+              <th style="padding:6px 4px;text-align:center;font-size:.6rem;color:#aaa;font-weight:700">Score</th>
+            </tr>
+          </thead>
+          <tbody>${trs}</tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px;font-size:.62rem;color:#bbb">Score : Victoire = 3 pts · Égalité = 1 pt · Défaite = 0 pt · Mis à jour à chaque séance archivée</p>
+    </div>`;
+}
+
 function renderArchives() {
   const cont = document.getElementById('archives-content');
   const archives = state.archives || [];
   const saisons = state.saisons || [];
-
-  // Vue active : 'seances' ou 'saisons'
   const view = cont.dataset.view || 'seances';
+
+  const binders = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="5" height="18" rx="1"/><line x1="4.5" y1="5" x2="6.5" y2="5"/><line x1="4.5" y1="7.5" x2="6.5" y2="7.5"/><line x1="4.5" y1="10" x2="6.5" y2="10"/><circle cx="5.5" cy="17" r="1"/><rect x="9.5" y="2" width="5" height="18" rx="1"/><line x1="11" y1="5" x2="13" y2="5"/><line x1="11" y1="7.5" x2="13" y2="7.5"/><line x1="11" y1="10" x2="13" y2="10"/><circle cx="12" cy="17" r="1"/><g transform="rotate(15, 19, 11)"><rect x="16" y="2" width="5" height="18" rx="1"/><line x1="17.5" y1="5" x2="19.5" y2="5"/><line x1="17.5" y1="7.5" x2="19.5" y2="7.5"/><line x1="17.5" y1="10" x2="19.5" y2="10"/><circle cx="18.5" cy="17" r="1"/></g></svg>`;
 
   const tabBar = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;background:#f0f0f2;border-radius:12px;padding:3px;margin-bottom:14px;">
@@ -1296,39 +1428,19 @@ function renderArchives() {
       <button onclick="setArchiveView('saisons')" style="padding:9px;border:none;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s;
         background:${view==='saisons'?'#fff':'transparent'};color:${view==='saisons'?'#111':'#aaa'};
         box-shadow:${view==='saisons'?'0 1px 3px rgba(0,0,0,.1)':'none'}">
-        Saisons (${saisons.length})
+        Saisons passées (${saisons.length})
       </button>
     </div>
   `;
 
   if (view === 'seances') {
+    const classementBlock = renderSaisonEnCours();
     const btnArchive = `
-      <button class="btn btn-dark btn-full" style="margin-bottom:10px" onclick="openArchiveModal()">
-        + Archiver la séance actuelle
-      </button>
-      <button class="btn btn-full btn-sm" style="margin-bottom:14px;color:#555;border-color:#ddd" onclick="openSaisonModal()">
-        Clôturer et archiver la saison
-      </button>
+      <button class="btn btn-dark btn-full" style="margin-bottom:8px" onclick="openArchiveModal()">+ Archiver la séance actuelle</button>
+      <button class="btn btn-full btn-sm" style="margin-bottom:14px;color:#555;border-color:#ddd" onclick="openSaisonModal()">Clôturer et archiver la saison</button>
     `;
     if (!archives.length) {
-      cont.innerHTML = tabBar + btnArchive + `<div class="empty">
-        <div class="empty-ico">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="2" width="5" height="18" rx="1"/>
-            <line x1="4.5" y1="5" x2="6.5" y2="5"/><line x1="4.5" y1="7.5" x2="6.5" y2="7.5"/><line x1="4.5" y1="10" x2="6.5" y2="10"/>
-            <circle cx="5.5" cy="17" r="1"/>
-            <rect x="9.5" y="2" width="5" height="18" rx="1"/>
-            <line x1="11" y1="5" x2="13" y2="5"/><line x1="11" y1="7.5" x2="13" y2="7.5"/><line x1="11" y1="10" x2="13" y2="10"/>
-            <circle cx="12" cy="17" r="1"/>
-            <g transform="rotate(15, 19, 11)">
-              <rect x="16" y="2" width="5" height="18" rx="1"/>
-              <line x1="17.5" y1="5" x2="19.5" y2="5"/><line x1="17.5" y1="7.5" x2="19.5" y2="7.5"/><line x1="17.5" y1="10" x2="19.5" y2="10"/>
-              <circle cx="18.5" cy="17" r="1"/>
-            </g>
-          </svg>
-        </div>
-        <p>Aucune séance archivée.</p>
-      </div>`;
+      cont.innerHTML = classementBlock + tabBar + btnArchive + `<div class="empty"><div class="empty-ico" style="font-size:1.8rem">${binders}</div><p>Aucune séance archivée.</p></div>`;
       return;
     }
     const cards = archives.map(arc => {
@@ -1346,37 +1458,17 @@ function renderArchives() {
         </div>
       </div>`;
     }).join('');
-    cont.innerHTML = tabBar + btnArchive +
+    cont.innerHTML = classementBlock + tabBar + btnArchive +
       `<div style="font-size:.65rem;color:#aaa;letter-spacing:.06em;text-transform:uppercase;font-weight:700;margin-bottom:10px">
         ${archives.length} séance${archives.length>1?'s':''} archivée${archives.length>1?'s':''}
       </div>${cards}`;
 
   } else {
-    // Vue SAISONS
     const btnSaison = `
-      <button class="btn btn-dark btn-full" style="margin-bottom:14px" onclick="openSaisonModal()">
-        Clôturer et archiver la saison
-      </button>
+      <button class="btn btn-dark btn-full" style="margin-bottom:14px" onclick="openSaisonModal()">Clôturer et archiver la saison</button>
     `;
     if (!saisons.length) {
-      cont.innerHTML = tabBar + btnSaison + `<div class="empty">
-        <div class="empty-ico">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="2" width="5" height="18" rx="1"/>
-            <line x1="4.5" y1="5" x2="6.5" y2="5"/><line x1="4.5" y1="7.5" x2="6.5" y2="7.5"/><line x1="4.5" y1="10" x2="6.5" y2="10"/>
-            <circle cx="5.5" cy="17" r="1"/>
-            <rect x="9.5" y="2" width="5" height="18" rx="1"/>
-            <line x1="11" y1="5" x2="13" y2="5"/><line x1="11" y1="7.5" x2="13" y2="7.5"/><line x1="11" y1="10" x2="13" y2="10"/>
-            <circle cx="12" cy="17" r="1"/>
-            <g transform="rotate(15, 19, 11)">
-              <rect x="16" y="2" width="5" height="18" rx="1"/>
-              <line x1="17.5" y1="5" x2="19.5" y2="5"/><line x1="17.5" y1="7.5" x2="19.5" y2="7.5"/><line x1="17.5" y1="10" x2="19.5" y2="10"/>
-              <circle cx="18.5" cy="17" r="1"/>
-            </g>
-          </svg>
-        </div>
-        <p>Aucune saison archivée.<br>Clôturez une saison pour voir<br>les stats annuelles.</p>
-      </div>`;
+      cont.innerHTML = tabBar + btnSaison + `<div class="empty"><div class="empty-ico" style="font-size:1.8rem">${binders}</div><p>Aucune saison archivée.<br>Clôturez une saison pour voir<br>les stats annuelles.</p></div>`;
       return;
     }
     const cards = saisons.map(s => {
@@ -1435,13 +1527,15 @@ function confirmSaison() {
   };
 
   state.saisons.unshift(saison);
+  // Remise à zéro automatique pour la nouvelle saison
+  state.archives = [];
+  state.rotations = [];
+  state.scores = {};
   saveState();
   closeModal('modal-saison');
-  renderArchives();
   document.getElementById('archives-content').dataset.view = 'saisons';
-
-  // Proposer de vider les séances archivées pour repartir sur une nouvelle saison
-  document.getElementById('modal-after-saison').classList.add('open');
+  renderArchives(); renderRotations(); renderScores(); renderClassement();
+  toast('Saison archivée ✓');
 }
 
 function resetForNewSaison() {
@@ -1563,7 +1657,7 @@ function openSaisonDetail(id) {
         <tbody>${trs}</tbody>
       </table>
     </div>
-    <p style="margin-top:10px;font-size:.62rem;color:#bbb">Score : V×3 + É×1 · Tri : Score puis Différentiel</p>
+    <p style="margin-top:10px;font-size:.62rem;color:#bbb">Score : Victoire = 3 pts · Égalité = 1 pt · Défaite = 0 pt · Tri : Score puis Différentiel</p>
   `;
   openModal('modal-saison-detail');
 }
@@ -1575,6 +1669,13 @@ function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeModalIfBg(e){if(e.target===e.currentTarget)closeModal(e.currentTarget.id);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function migrateState() {
+  // Ajouter present:false aux joueurs existants qui n'ont pas ce champ
+  (state.joueurs||[]).forEach(j => {
+    if (j.present === undefined) j.present = false;
+  });
+}
+
 function renderAll(){renderJoueurs();renderRotations();renderScores();renderClassement();renderArchives();}
 
 /* ── INIT ── */
@@ -1635,6 +1736,7 @@ async function showApp() {
   document.getElementById('login-screen').classList.remove('visible');
   document.getElementById('app').style.display = 'flex';
   await loadState();
+  migrateState();
   document.getElementById('param-terrains').value = state.params.terrains || 5;
   document.getElementById('param-rotations').value = state.params.rotations || 10;
   renderAll();
